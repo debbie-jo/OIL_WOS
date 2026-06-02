@@ -246,6 +246,26 @@ textarea {
   color: #aebbd4;
 }
 
+.row-actions {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+
+.mini-button {
+  min-height: 32px;
+  padding: 0 10px;
+  background: #1a2640;
+  border-color: #34445f;
+  color: #dce7ff;
+  white-space: nowrap;
+}
+
+.mini-button.apply {
+  background: #1d4d8f;
+  border-color: #4f93ff;
+}
+
 .bulk-dialog {
   width: min(620px, calc(100% - 28px));
   border: 1px solid var(--line);
