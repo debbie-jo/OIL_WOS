@@ -17,6 +17,7 @@
     importBulkBtn: document.getElementById("importBulkBtn"),
     copyBtn: document.getElementById("copyBtn"),
     resetBtn: document.getElementById("resetBtn"),
+    switchingCopyGrid: document.getElementById("switchingCopyGrid"),
     toast: document.getElementById("toast"),
   };
 
@@ -149,6 +150,7 @@
     renderRallyOptions();
     renderRallies();
     renderDefenders();
+    renderSwitchingButtons();
     updateDynamicTimes();
     saveState();
   }
@@ -212,6 +214,16 @@
       .join("");
 
     els.selectAll.checked = state.defenders.length > 0 && state.defenders.every((defender) => defender.selected);
+  }
+
+  function renderSwitchingButtons() {
+    els.switchingCopyGrid.innerHTML = state.rallies
+      .map((rally, index) => `
+        <button class="copy-btn" data-switch-copy="${rally.id}" type="button">
+          집결장${index + 1} 복사
+        </button>
+      `)
+      .join("");
   }
 
   function updateDynamicTimes() {
@@ -381,6 +393,22 @@
   });
   els.copyBtn.addEventListener("click", copyResults);
   els.resetBtn.addEventListener("click", resetAll);
+
+  document.querySelectorAll(".tab").forEach((button) => {
+    button.addEventListener("click", () => {
+      document.querySelectorAll(".tab").forEach((tab) => tab.classList.remove("active"));
+      document.querySelectorAll(".section").forEach((section) => section.classList.remove("active"));
+      button.classList.add("active");
+      document.getElementById(`${button.dataset.tab}Section`).classList.add("active");
+    });
+  });
+
+  els.switchingCopyGrid.addEventListener("click", (event) => {
+    const id = event.target.dataset.switchCopy;
+    if (!id) return;
+    const rally = findRally(id);
+    if (rally) copyRally(rally);
+  });
 
   els.selectAll.addEventListener("change", (event) => {
     state.defenders.forEach((defender) => {
