@@ -1,0 +1,13 @@
+{
+  "name": "oil-wos-tools",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "scan:safe": "node tools/safe-rally-monitor.js --once",
+    "watch:safe": "node tools/safe-rally-monitor.js"
+  },
+  "dependencies": {
+    "tesseract.js": "^6.0.1"
+  }
+}
