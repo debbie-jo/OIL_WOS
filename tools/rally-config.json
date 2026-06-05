@@ -8,22 +8,22 @@
   "timeCropScale": 4,
   "timeRegions": [
     {
-      "left": 255,
-      "top": 132,
-      "width": 185,
-      "height": 42
+      "left": 310,
+      "top": 104,
+      "width": 145,
+      "height": 36
     },
     {
-      "left": 255,
-      "top": 392,
-      "width": 185,
-      "height": 42
+      "left": 310,
+      "top": 364,
+      "width": 145,
+      "height": 36
     },
     {
-      "left": 255,
-      "top": 522,
-      "width": 185,
-      "height": 42
+      "left": 310,
+      "top": 494,
+      "width": 145,
+      "height": 36
     }
   ]
 }
