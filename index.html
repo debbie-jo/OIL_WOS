@@ -72,6 +72,12 @@ tr:hover td{background:#151f30;}
 .rally-badge{font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:#0f1a2e;color:#93c5fd;border:1px solid #1e3a5f;}
 .rally-meta{display:flex;gap:8px 14px;flex-wrap:wrap;font-size:12px;color:var(--muted);line-height:1.5;}
 .rally-note{font-size:12px;color:#cbd5e1;margin-top:7px;line-height:1.5;}
+.rally-edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;}
+.rally-edit-grid label{font-size:10px;margin-bottom:3px;}
+.rally-edit-grid input{font-size:12px;padding:6px 8px;}
+.rally-small-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px;}
+.rally-small-row label{font-size:10px;margin-bottom:3px;}
+.rally-small-row input{font-size:12px;padding:6px 8px;text-align:center;}
 .rally-time{font-family:var(--mono);min-width:92px;text-align:center;border-radius:8px;padding:8px;background:#0a1f12;color:#86efac;border:1px solid #065f46;}
 .rally-time.ending{background:#1a1500;color:#fde68a;border-color:#92400e;}
 .rally-time.ended{background:#1f0a0a;color:#fca5a5;border-color:#991b1b;}
@@ -105,6 +111,7 @@ tr:hover td{background:#151f30;}
 @media(max-width:480px){
   .setting-row{grid-template-columns:1fr;}
   .enemy-grid{grid-template-columns:1fr;}
+  .rally-edit-grid,.rally-small-row{grid-template-columns:1fr;}
   .rally-card{grid-template-columns:1fr;}
   .rally-time{width:100%;}
   table{font-size:12px;}
@@ -274,6 +281,16 @@ function normalizeRallies(data){
 }
 function escapeRallyHtml(v){return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');}
 function escapeRallyJs(v){return String(v).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,'\\n').replace(/\r/g,'');}
+function rallyDomKey(v){return String(v).replace(/[^a-zA-Z0-9_-]/g,'_');}
+function getRallyRemainSeconds(rally){
+  var end=parseRallyDate(rally.endsAt);
+  if(!end)return 0;
+  return Math.max(0,Math.ceil((end-new Date())/1000));
+}
+function findEnemyMarch(leader){
+  var found=enemies.find(function(e){return e.name===leader;});
+  return found?found.march:30;
+}
 function renderRallies(){
   var list=document.getElementById('rally-list'), empty=document.getElementById('rally-empty');
   if(!list||!empty)return;
@@ -286,10 +303,24 @@ function renderRallies(){
   visible.forEach(function(x){
     var card=document.createElement('div');
     var timeClass=x.s.status==='ended'?'ended':(x.s.status==='ending'?'ending':'');
+    var key=rallyDomKey(x.r.id);
+    var remainSec=getRallyRemainSeconds(x.r);
+    var remainMin=Math.floor(remainSec/60);
+    var remainSecond=remainSec%60;
+    var march=findEnemyMarch(x.r.leader);
     card.className='rally-card '+(x.s.status==='ended'?'ended':'');
     card.innerHTML='<div><div class="rally-title"><strong>'+escapeRallyHtml(x.r.title)+'</strong><span class="rally-badge">'+escapeRallyHtml(x.r.target)+'</span></div>'
       +'<div class="rally-meta"><span>시작 '+formatRallyDate(x.s.start)+'</span><span>종료 '+formatRallyDate(x.s.end)+'</span><span>집결장 '+escapeRallyHtml(x.r.leader)+'</span></div>'
-      +(x.r.note?'<div class="rally-note">'+escapeRallyHtml(x.r.note)+'</div>':'')+'</div>'
+      +(x.r.note?'<div class="rally-note">'+escapeRallyHtml(x.r.note)+'</div>':'')
+      +'<div class="rally-edit-grid">'
+      +'<div><label>집결장 이름</label><input id="rally-leader-'+key+'" type="text" value="'+escapeRallyHtml(x.r.leader)+'"></div>'
+      +'<div><label>목표</label><input id="rally-target-'+key+'" type="text" value="'+escapeRallyHtml(x.r.target)+'"></div>'
+      +'</div>'
+      +'<div class="rally-small-row">'
+      +'<div><label>남은 분</label><input id="rally-min-'+key+'" type="number" min="0" value="'+remainMin+'"></div>'
+      +'<div><label>남은 초</label><input id="rally-sec-'+key+'" type="number" min="0" max="59" value="'+remainSecond+'"></div>'
+      +'<div><label>행군 초</label><input id="rally-march-'+key+'" type="number" min="0" value="'+march+'"></div>'
+      +'</div></div>'
       +'<div><div class="rally-time '+timeClass+'"><strong>'+x.s.label+'</strong><span>'+(x.s.status==='ended'?'만료':'남음')+'</span></div>'
       +(x.s.status==='ended'?'':'<button class="rally-apply" onclick="applyRallyToDefense(\''+escapeRallyJs(x.r.id)+'\')">방어 적용</button>')+'</div>';
     list.appendChild(card);
@@ -298,11 +329,16 @@ function renderRallies(){
 function applyRallyToDefense(rallyId){
   var rally=rallyRows.find(function(r){return r.id===rallyId;});
   if(!rally)return alert('집결 정보를 찾지 못했습니다.');
-  var end=parseRallyDate(rally.endsAt);
-  if(!end)return alert('종료 시간이 없는 집결은 적용할 수 없습니다.');
-  var remain=Math.max(0,Math.ceil((end-new Date())/1000));
+  var key=rallyDomKey(rally.id);
+  var leaderInput=document.getElementById('rally-leader-'+key);
+  var targetInput=document.getElementById('rally-target-'+key);
+  var minInput=document.getElementById('rally-min-'+key);
+  var secInput=document.getElementById('rally-sec-'+key);
+  var marchInput=document.getElementById('rally-march-'+key);
+  var remain=(parseInt(minInput&&minInput.value)||0)*60+(parseInt(secInput&&secInput.value)||0);
   if(remain<=0)return alert('이미 종료된 집결입니다.');
-  var leader=rally.leader&&rally.leader!=='집결장 미정'?rally.leader:'집결장'+(enemies.length+1);
+  var leader=(leaderInput&&leaderInput.value.trim())||rally.leader||'집결장'+(enemies.length+1);
+  var march=parseInt(marchInput&&marchInput.value)||30;
   var idx=enemies.findIndex(function(e){return e.name===leader;});
   if(idx<0)idx=enemies.findIndex(function(e){return e.arrivalSec===undefined;});
   if(idx<0){
@@ -311,8 +347,9 @@ function applyRallyToDefense(rallyId){
     idx=enemies.length-1;
   }
   enemies[idx].name=leader;
+  enemies[idx].march=march;
   applyEnemyRemain(idx,remain);
-  alert(leader+'을(를) 상대 집결장 '+(idx+1)+'번에 적용했습니다.\n행군 시간(초)을 확인한 뒤 유저 출발 시간을 복사하세요.');
+  alert(leader+'을(를) 상대 집결장 '+(idx+1)+'번에 적용했습니다.\n목표: '+((targetInput&&targetInput.value.trim())||rally.target||'대상 미정')+'\n남은 시간 '+Math.floor(remain/60)+'분 '+(remain%60)+'초 + 행군 '+march+'초로 계산했습니다.');
 }
 function loadRallies(){
   var status=document.getElementById('rally-load-status'), dot=document.getElementById('rally-dot'), updated=document.getElementById('rally-updated');

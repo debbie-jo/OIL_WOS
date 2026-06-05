@@ -1,8 +1,8 @@
 {
   "slotLeaders": [
-    "[koz]데비팀장",
-    "[koz]데비입장"
+    "[koz]\ub370\ube44\ud300\uc7a5",
+    "[koz]\ub370\ube44\uc785\uc7a5"
   ],
-  "defaultTarget": "[KDH]연맹깃발",
-  "maxRallySeconds": 600
+  "defaultTarget": "[KDH]\uc5f0\ub9f9\uae43\ubc1c",
+  "maxRallySeconds": 7200
 }
