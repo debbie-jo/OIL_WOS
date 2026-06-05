@@ -15,6 +15,7 @@ const args = new Set(process.argv.slice(2));
 const once = args.has("--once");
 const publish = args.has("--publish");
 const keepManual = args.has("--keep-manual");
+const debug = args.has("--debug");
 const imageArgIndex = process.argv.indexOf("--image");
 const imagePath = imageArgIndex >= 0 ? path.resolve(process.argv[imageArgIndex + 1] || "") : "";
 
@@ -120,7 +121,7 @@ function extractLeaders(clean) {
 function parseRallies(text, detectedAt = new Date()) {
   const clean = compactText(text);
   const config = readConfig();
-  if (/현재\s*전투가\s*없습니다/.test(clean)) return [];
+  const hasNoBattle = /현재\s*전투가\s*없습니다/.test(clean);
 
   const times = [];
   const timePattern = /집\s*결\s*중\s*[:：]?\s*([0-9\s:：]{4,14})/g;
@@ -128,12 +129,12 @@ function parseRallies(text, detectedAt = new Date()) {
     const remainingSeconds = parseDuration(match[1]);
     if (remainingSeconds !== null && remainingSeconds > 0) times.push(remainingSeconds);
   }
-  if (!times.length) return [];
+  if (!times.length) return { rallies: [], confident: hasNoBattle, reason: hasNoBattle ? "no-battle" : "ocr-unclear" };
 
   const targets = extractTargets(clean);
   const leaders = extractLeaders(clean);
 
-  return times.map((remainingSeconds, index) => {
+  const rallies = times.map((remainingSeconds, index) => {
     const ocrLeader = leaders[index] || leaders[leaders.length - 1] || "";
     const hintLeader = config.slotLeaders[index] || "";
     const leader = ocrLeader && /[가-힣]/.test(ocrLeader) ? ocrLeader : hintLeader || ocrLeader || `OCR Rally ${index + 1}`;
@@ -150,6 +151,7 @@ function parseRallies(text, detectedAt = new Date()) {
       note: "LDPlayer safe OCR"
     };
   });
+  return { rallies, confident: true, reason: "rallies" };
 }
 
 function readRalliesFile() {
@@ -214,7 +216,16 @@ async function scanOnce() {
   const ocrWorker = await getWorker();
   const result = await ocrWorker.recognize(screenshot);
   const detectedAt = new Date();
-  const detected = parseRallies(result.data.text, detectedAt);
+  if (debug) {
+    fs.writeFileSync(path.join(SCREENSHOT_DIR, "latest-ocr.txt"), result.data.text, "utf8");
+  }
+  const parsed = parseRallies(result.data.text, detectedAt);
+  if (!parsed.confident) {
+    console.log(`[${detectedAt.toLocaleTimeString()}] OCR unclear; keeping previous rally data`);
+    return;
+  }
+
+  const detected = parsed.rallies;
   const synced = syncRallies(readRalliesFile(), detected);
   const signature = JSON.stringify(synced.map((r) => [r.leader, r.target, r.endsAt, r.source]));
 
