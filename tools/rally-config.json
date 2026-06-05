@@ -3,5 +3,6 @@
     "[koz]데비팀장",
     "[koz]데비입장"
   ],
-  "defaultTarget": "[KDH]연맹깃발"
+  "defaultTarget": "[KDH]연맹깃발",
+  "maxRallySeconds": 600
 }

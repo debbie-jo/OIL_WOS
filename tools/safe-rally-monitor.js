@@ -45,10 +45,11 @@ function readConfig() {
     const parsed = JSON.parse(fs.readFileSync(CONFIG_FILE, "utf8"));
     return {
       slotLeaders: Array.isArray(parsed.slotLeaders) ? parsed.slotLeaders : [],
-      defaultTarget: parsed.defaultTarget || "Alliance Flag"
+      defaultTarget: parsed.defaultTarget || "Alliance Flag",
+      maxRallySeconds: Number(parsed.maxRallySeconds) || 600
     };
   } catch {
-    return { slotLeaders: [], defaultTarget: "Alliance Flag" };
+    return { slotLeaders: [], defaultTarget: "Alliance Flag", maxRallySeconds: 600 };
   }
 }
 
@@ -135,7 +136,9 @@ function parseRallies(text, detectedAt = new Date()) {
   const timePattern = /\uC9D1\s*\uACB0\s*\uC911\s*[:\uFF1A]?\s*([0-9\s:\uFF1A]{4,14})/g;
   for (const match of clean.matchAll(timePattern)) {
     const remainingSeconds = parseDuration(match[1]);
-    if (remainingSeconds !== null && remainingSeconds > 0) times.push(remainingSeconds);
+    if (remainingSeconds !== null && remainingSeconds > 0 && remainingSeconds <= config.maxRallySeconds) {
+      times.push(remainingSeconds);
+    }
   }
 
   if (!times.length) {
