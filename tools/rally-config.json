@@ -4,5 +4,26 @@
     "[koz]\ub370\ube44\uc785\uc7a5"
   ],
   "defaultTarget": "[KDH]\uc5f0\ub9f9\uae43\ubc1c",
-  "maxRallySeconds": 7200
+  "maxRallySeconds": 7200,
+  "timeCropScale": 4,
+  "timeRegions": [
+    {
+      "left": 255,
+      "top": 132,
+      "width": 185,
+      "height": 42
+    },
+    {
+      "left": 255,
+      "top": 392,
+      "width": 185,
+      "height": 42
+    },
+    {
+      "left": 255,
+      "top": 522,
+      "width": 185,
+      "height": 42
+    }
+  ]
 }

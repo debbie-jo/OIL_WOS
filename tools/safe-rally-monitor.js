@@ -7,6 +7,7 @@ const ROOT = path.resolve(__dirname, "..");
 const SCREENSHOT_DIR = path.join(__dirname, "screenshots");
 const RALLIES_FILE = path.join(ROOT, "rallies.json");
 const CAPTURE_SCRIPT = path.join(__dirname, "capture-ldplayer.ps1");
+const CROP_SCRIPT = path.join(__dirname, "crop-image.ps1");
 const CONFIG_FILE = path.join(__dirname, "rally-config.json");
 const ENV_FILE = path.join(ROOT, ".env");
 const INTERVAL_MS = 1000;
@@ -40,16 +41,18 @@ function readEnv() {
 }
 
 function readConfig() {
-  if (!fs.existsSync(CONFIG_FILE)) return { slotLeaders: [], defaultTarget: "Alliance Flag" };
+  if (!fs.existsSync(CONFIG_FILE)) return { slotLeaders: [], defaultTarget: "Alliance Flag", timeRegions: [] };
   try {
     const parsed = JSON.parse(fs.readFileSync(CONFIG_FILE, "utf8"));
     return {
       slotLeaders: Array.isArray(parsed.slotLeaders) ? parsed.slotLeaders : [],
       defaultTarget: parsed.defaultTarget || "Alliance Flag",
-      maxRallySeconds: Number(parsed.maxRallySeconds) || 600
+      maxRallySeconds: Number(parsed.maxRallySeconds) || 600,
+      timeCropScale: Number(parsed.timeCropScale) || 3,
+      timeRegions: Array.isArray(parsed.timeRegions) ? parsed.timeRegions : []
     };
   } catch {
-    return { slotLeaders: [], defaultTarget: "Alliance Flag", maxRallySeconds: 600 };
+    return { slotLeaders: [], defaultTarget: "Alliance Flag", maxRallySeconds: 600, timeCropScale: 3, timeRegions: [] };
   }
 }
 
@@ -66,6 +69,30 @@ function runCapture(outputFile) {
     CAPTURE_SCRIPT,
     "-OutFile",
     outputFile
+  ], { stdio: "pipe" });
+}
+
+function runCrop(inputFile, outputFile, region, scale) {
+  execFileSync("powershell", [
+    "-NoProfile",
+    "-ExecutionPolicy",
+    "Bypass",
+    "-File",
+    CROP_SCRIPT,
+    "-InFile",
+    inputFile,
+    "-OutFile",
+    outputFile,
+    "-Left",
+    String(region.left),
+    "-Top",
+    String(region.top),
+    "-Width",
+    String(region.width),
+    "-Height",
+    String(region.height),
+    "-Scale",
+    String(scale)
   ], { stdio: "pipe" });
 }
 
@@ -93,6 +120,29 @@ function parseDuration(value) {
 
 function isoFromRemaining(seconds, detectedAt) {
   return new Date(detectedAt.getTime() + seconds * 1000).toISOString();
+}
+
+function buildDetectedRallies(times, clean, config, detectedAt) {
+  const targets = extractTargets(clean, config);
+  const leaders = extractLeaders(clean);
+
+  return times.map((remainingSeconds, index) => {
+    const ocrLeader = leaders[index] || leaders[leaders.length - 1] || "";
+    const hintLeader = config.slotLeaders[index] || "";
+    const leader = ocrLeader && /[\uAC00-\uD7A3]/.test(ocrLeader) ? ocrLeader : hintLeader || ocrLeader || `OCR Rally ${index + 1}`;
+    const target = targets[index] || targets[0] || config.defaultTarget || "Alliance Flag";
+    const endsAt = isoFromRemaining(remainingSeconds, detectedAt);
+    return {
+      id: `ocr-${leader}-${index}`.replace(/[^\[\]a-zA-Z0-9\uAC00-\uD7A3_-]/g, "-"),
+      title: `${leader} rally`,
+      target,
+      leader,
+      startsAt: null,
+      endsAt,
+      source: OCR_SOURCE,
+      note: "LDPlayer safe OCR"
+    };
+  });
 }
 
 function cleanBracketName(value) {
@@ -145,28 +195,42 @@ function parseRallies(text, detectedAt = new Date()) {
     return { rallies: [], confident: hasNoBattle, reason: hasNoBattle ? "no-battle" : "ocr-unclear" };
   }
 
-  const targets = extractTargets(clean, config);
-  const leaders = extractLeaders(clean);
-
-  const rallies = times.map((remainingSeconds, index) => {
-    const ocrLeader = leaders[index] || leaders[leaders.length - 1] || "";
-    const hintLeader = config.slotLeaders[index] || "";
-    const leader = ocrLeader && /[\uAC00-\uD7A3]/.test(ocrLeader) ? ocrLeader : hintLeader || ocrLeader || `OCR Rally ${index + 1}`;
-    const target = targets[index] || targets[0] || config.defaultTarget || "Alliance Flag";
-    const endsAt = isoFromRemaining(remainingSeconds, detectedAt);
-    return {
-      id: `ocr-${leader}-${index}`.replace(/[^\[\]a-zA-Z0-9\uAC00-\uD7A3_-]/g, "-"),
-      title: `${leader} rally`,
-      target,
-      leader,
-      startsAt: null,
-      endsAt,
-      source: OCR_SOURCE,
-      note: "LDPlayer safe OCR"
-    };
-  });
+  const rallies = buildDetectedRallies(times, clean, config, detectedAt);
 
   return { rallies, confident: true, reason: "rallies" };
+}
+
+async function readTimeRegionDurations(screenshot, text, detectedAt) {
+  const config = readConfig();
+  if (!config.timeRegions.length) return [];
+
+  const ocrWorker = await getWorker();
+  const cropDir = path.join(SCREENSHOT_DIR, "time-crops");
+  ensureDir(cropDir);
+
+  const durations = [];
+  for (let index = 0; index < config.timeRegions.length; index += 1) {
+    const region = config.timeRegions[index];
+    if (![region.left, region.top, region.width, region.height].every((value) => Number.isFinite(Number(value)))) continue;
+
+    const cropFile = path.join(cropDir, `time-${index + 1}.png`);
+    try {
+      runCrop(screenshot, cropFile, region, config.timeCropScale);
+      const result = await ocrWorker.recognize(cropFile);
+      const remainingSeconds = parseDuration(result.data.text);
+      if (debug) {
+        fs.writeFileSync(path.join(cropDir, `time-${index + 1}.txt`), result.data.text, "utf8");
+      }
+      if (remainingSeconds !== null && remainingSeconds > 0 && remainingSeconds <= config.maxRallySeconds) {
+        durations.push(remainingSeconds);
+      }
+    } catch (error) {
+      if (debug) console.log(`time crop ${index + 1} failed: ${error.message}`);
+    }
+  }
+
+  if (!durations.length) return [];
+  return buildDetectedRallies(durations, compactText(text), config, detectedAt);
 }
 
 function readRalliesFile() {
@@ -291,7 +355,10 @@ async function scanOnce() {
   const detectedAt = new Date();
   if (debug) fs.writeFileSync(path.join(SCREENSHOT_DIR, "latest-ocr.txt"), result.data.text, "utf8");
 
-  const parsed = parseRallies(result.data.text, detectedAt);
+  const regionRallies = await readTimeRegionDurations(screenshot, result.data.text, detectedAt);
+  const parsed = regionRallies.length
+    ? { rallies: regionRallies, confident: true, reason: "time-regions" }
+    : parseRallies(result.data.text, detectedAt);
   if (!parsed.confident) {
     console.log(`[${detectedAt.toLocaleTimeString()}] OCR unclear; keeping previous rally data`);
     return;
