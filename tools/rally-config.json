@@ -8,21 +8,21 @@
   "timeCropScale": 4,
   "timeRegions": [
     {
-      "left": 310,
+      "left": 378,
       "top": 104,
-      "width": 145,
+      "width": 78,
       "height": 36
     },
     {
-      "left": 310,
+      "left": 378,
       "top": 364,
-      "width": 145,
+      "width": 78,
       "height": 36
     },
     {
-      "left": 310,
+      "left": 378,
       "top": 494,
-      "width": 145,
+      "width": 78,
       "height": 36
     }
   ]

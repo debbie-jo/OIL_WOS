@@ -217,7 +217,18 @@ async function readTimeRegionDurations(screenshot, text, detectedAt) {
     const cropFile = path.join(cropDir, `time-${index + 1}.png`);
     try {
       runCrop(screenshot, cropFile, region, config.timeCropScale);
-      const result = await ocrWorker.recognize(cropFile);
+      await ocrWorker.setParameters({
+        tessedit_char_whitelist: "0123456789:",
+        tessedit_pageseg_mode: "7"
+      });
+      let result;
+      try {
+        result = await ocrWorker.recognize(cropFile);
+      } finally {
+        await ocrWorker.setParameters({
+          tessedit_char_whitelist: ""
+        });
+      }
       const remainingSeconds = parseDuration(result.data.text);
       if (debug) {
         fs.writeFileSync(path.join(cropDir, `time-${index + 1}.txt`), result.data.text, "utf8");
