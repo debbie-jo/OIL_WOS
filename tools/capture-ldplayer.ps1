@@ -51,8 +51,7 @@ if (-not $OutFile) {
   throw "OutFile is required."
 }
 
-$script:target = [IntPtr]::Zero
-$script:targetProcessId = 0
+$script:candidates = New-Object System.Collections.ArrayList
 [Win32Capture]::EnumWindows({
   param($hWnd, $lParam)
   if (-not [Win32Capture]::IsWindowVisible($hWnd)) { return $true }
@@ -69,15 +68,33 @@ $script:targetProcessId = 0
   }
 
   if (($title -and ($title -match $TitlePattern)) -or ($procName -and ($procName -match $ProcessPattern))) {
-    $script:target = $hWnd
-    $script:targetProcessId = $pidValue
-    return $false
+    $candidateRect = New-Object Win32Capture+RECT
+    [void][Win32Capture]::GetWindowRect($hWnd, [ref]$candidateRect)
+    $candidateWidth = $candidateRect.Right - $candidateRect.Left
+    $candidateHeight = $candidateRect.Bottom - $candidateRect.Top
+    if ($candidateWidth -ge 300 -and $candidateHeight -ge 400) {
+      [void]$script:candidates.Add([pscustomobject]@{
+        Handle = $hWnd
+        ProcessId = $pidValue
+        ProcessName = $procName
+        Title = $title
+        Width = $candidateWidth
+        Height = $candidateHeight
+        Area = $candidateWidth * $candidateHeight
+      })
+    }
   }
   return $true
 }, [IntPtr]::Zero) | Out-Null
 
-$target = $script:target
-$targetProcessId = $script:targetProcessId
+$selected = $script:candidates | Sort-Object Area -Descending | Select-Object -First 1
+if ($selected) {
+  $target = $selected.Handle
+  $targetProcessId = $selected.ProcessId
+} else {
+  $target = [IntPtr]::Zero
+  $targetProcessId = 0
+}
 
 if ($target -eq [IntPtr]::Zero) {
   throw "LDPlayer window was not found. Keep LDPlayer open and visible."
