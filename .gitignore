@@ -2,3 +2,4 @@ node_modules/
 .npm-cache/
 tools/screenshots/
 tools/*.log
+*.traineddata

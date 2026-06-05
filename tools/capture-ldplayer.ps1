@@ -32,6 +32,12 @@ public class Win32Capture {
   [DllImport("user32.dll")]
   public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
 
+  [DllImport("user32.dll")]
+  public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+  [DllImport("user32.dll")]
+  public static extern bool SetForegroundWindow(IntPtr hWnd);
+
   public struct RECT {
     public int Left;
     public int Top;
@@ -46,9 +52,6 @@ if (-not $OutFile) {
 }
 
 $target = [IntPtr]::Zero
-$pattern = [regex]::new($TitlePattern)
-$processPattern = [regex]::new($ProcessPattern)
-
 [Win32Capture]::EnumWindows({
   param($hWnd, $lParam)
   if (-not [Win32Capture]::IsWindowVisible($hWnd)) { return $true }
@@ -64,7 +67,7 @@ $processPattern = [regex]::new($ProcessPattern)
     $procName = ""
   }
 
-  if (($title -and $pattern.IsMatch($title)) -or ($procName -and $processPattern.IsMatch($procName))) {
+  if (($title -and ($title -match $TitlePattern)) -or ($procName -and ($procName -match $ProcessPattern))) {
     $script:target = $hWnd
     return $false
   }
@@ -74,6 +77,10 @@ $processPattern = [regex]::new($ProcessPattern)
 if ($target -eq [IntPtr]::Zero) {
   throw "LDPlayer window was not found. Keep LDPlayer open and visible."
 }
+
+[void][Win32Capture]::ShowWindow($target, 9)
+[void][Win32Capture]::SetForegroundWindow($target)
+Start-Sleep -Milliseconds 600
 
 $rect = New-Object Win32Capture+RECT
 [void][Win32Capture]::GetWindowRect($target, [ref]$rect)

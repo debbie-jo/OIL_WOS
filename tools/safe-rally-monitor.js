@@ -13,6 +13,8 @@ const INTERVAL_MS = 1000;
 const args = new Set(process.argv.slice(2));
 const once = args.has("--once");
 const publish = args.has("--publish");
+const imageArgIndex = process.argv.indexOf("--image");
+const imagePath = imageArgIndex >= 0 ? path.resolve(process.argv[imageArgIndex + 1] || "") : "";
 
 let lastSignature = "";
 let worker;
@@ -22,7 +24,7 @@ function ensureDir(dir) {
 }
 
 function runPowerShell(script, outputFile) {
-  execFileSync("powershell.exe", [
+  execFileSync("powershell", [
     "-NoProfile",
     "-ExecutionPolicy",
     "Bypass",
@@ -34,9 +36,21 @@ function runPowerShell(script, outputFile) {
 }
 
 function parseDuration(value) {
-  const match = String(value).match(/(\d{1,2})\s*[:：]\s*(\d{2})\s*[:：]\s*(\d{2})/);
-  if (!match) return null;
-  return Number(match[1]) * 3600 + Number(match[2]) * 60 + Number(match[3]);
+  const raw = String(value);
+  const match = raw.match(/(\d{1,2})\s*[:：]\s*(\d{2})\s*[:：]\s*(\d{2})/);
+  if (match) return Number(match[1]) * 3600 + Number(match[2]) * 60 + Number(match[3]);
+
+  let digits = raw.replace(/\D/g, "");
+  if (digits.length === 7 && digits.startsWith("00")) {
+    digits = digits.slice(0, 2) + digits.slice(-4);
+  }
+  if (digits.length === 6) {
+    return Number(digits.slice(0, 2)) * 3600 + Number(digits.slice(2, 4)) * 60 + Number(digits.slice(4, 6));
+  }
+  if (digits.length === 4) {
+    return Number(digits.slice(0, 2)) * 60 + Number(digits.slice(2, 4));
+  }
+  return null;
 }
 
 function isoFromRemaining(seconds, detectedAt = new Date()) {
@@ -54,19 +68,19 @@ function parseRallies(text, detectedAt = new Date()) {
   const clean = compactText(text);
   if (/현재\s*전투가\s*없습니다/.test(clean)) return [];
 
-  const timeMatches = [...clean.matchAll(/집결\s*중\s*[:：]?\s*(\d{1,2}\s*[:：]\s*\d{2}\s*[:：]\s*\d{2})/g)];
+  const timeMatches = [...clean.matchAll(/집\s*결\s*중\s*[:：]?\s*([0-9\s:：]{4,12})/g)];
   if (!timeMatches.length) return [];
 
   const targetMatches = [...clean.matchAll(/\[[^\]\s]{2,12}\]\s*연맹\s*깃발/g)].map((m) => m[0].replace(/\s+/g, ""));
-  const leaderMatches = [...clean.matchAll(/\[[^\]\s]{2,12}\]\s*[^\s\[\]]{2,12}(?:팀장|입장|대장|장)?/g)]
+  const leaderMatches = [...clean.matchAll(/\[[^\]\s]{2,12}\]\s*[^\s\[\]]{2,16}(?:팀장|입장|대장|장)?/g)]
     .map((m) => m[0].replace(/\s+/g, ""))
-    .filter((value) => !/연맹깃발/.test(value));
+    .filter((value) => !/연맹깃발/.test(value) && !/KDH|목표|방어/.test(value));
 
   return timeMatches.map((match, index) => {
     const remainingSeconds = parseDuration(match[1]);
     if (remainingSeconds === null) return null;
-    const leader = leaderMatches[index] || leaderMatches[leaderMatches.length - 1] || "집결장 미정";
-    const target = targetMatches[index] || targetMatches[0] || "대상 미정";
+    const leader = leaderMatches[index] || leaderMatches[leaderMatches.length - 1] || `OCR 집결장 ${index + 1}`;
+    const target = targetMatches[index] || targetMatches[0] || "연맹 깃발";
     return {
       id: `ocr-${leader}-${isoFromRemaining(remainingSeconds, detectedAt)}`.replace(/[^a-zA-Z0-9가-힣_-]/g, "-"),
       title: `${leader} 집결`,
@@ -140,8 +154,12 @@ async function getWorker() {
 
 async function scanOnce() {
   ensureDir(SCREENSHOT_DIR);
-  const screenshot = path.join(SCREENSHOT_DIR, `ldplayer-${Date.now()}.png`);
-  runPowerShell(CAPTURE_SCRIPT, screenshot);
+  const screenshot = imagePath || path.join(SCREENSHOT_DIR, `ldplayer-${Date.now()}.png`);
+  if (!imagePath) {
+    runPowerShell(CAPTURE_SCRIPT, screenshot);
+  } else if (!fs.existsSync(screenshot)) {
+    throw new Error(`캡처 파일이 없습니다: ${screenshot}`);
+  }
 
   const ocrWorker = await getWorker();
   const result = await ocrWorker.recognize(screenshot);

@@ -4,7 +4,8 @@
   "private": true,
   "type": "commonjs",
   "scripts": {
-    "scan:safe": "node tools/safe-rally-monitor.js --once",
+    "capture:safe": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/capture-ldplayer.ps1 -OutFile tools/screenshots/latest.png",
+    "scan:safe": "node tools/safe-rally-monitor.js --once --image tools/screenshots/latest.png",
     "watch:safe": "node tools/safe-rally-monitor.js"
   },
   "dependencies": {

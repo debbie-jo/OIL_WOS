@@ -77,6 +77,8 @@ tr:hover td{background:#151f30;}
 .rally-time.ended{background:#1f0a0a;color:#fca5a5;border-color:#991b1b;}
 .rally-time strong{display:block;font-size:15px;}
 .rally-time span{display:block;font-family:var(--sans);font-size:10px;margin-top:2px;color:inherit;}
+.rally-apply{margin-top:8px;background:#1a2e1a;border:1px solid #2d5a2d;border-radius:7px;color:#4ade80;font-family:var(--sans);font-size:12px;font-weight:700;padding:6px 10px;cursor:pointer;width:100%;}
+.rally-apply:hover{border-color:#86efac;color:#86efac;}
 .rally-empty{text-align:center;padding:22px 10px;color:var(--muted);font-size:13px;border:1px dashed var(--border);border-radius:10px;}
 .pet-inline{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#1a1030;border:1px solid #3b2060;border-radius:8px;padding:8px 10px;margin-top:6px;}
 .pet-time{font-family:var(--mono);font-size:15px;font-weight:bold;color:#a78bfa;}
@@ -269,6 +271,7 @@ function normalizeRallies(data){
   });
 }
 function escapeRallyHtml(v){return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');}
+function escapeRallyJs(v){return String(v).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,'\\n').replace(/\r/g,'');}
 function renderRallies(){
   var list=document.getElementById('rally-list'), empty=document.getElementById('rally-empty');
   if(!list||!empty)return;
@@ -285,9 +288,29 @@ function renderRallies(){
     card.innerHTML='<div><div class="rally-title"><strong>'+escapeRallyHtml(x.r.title)+'</strong><span class="rally-badge">'+escapeRallyHtml(x.r.target)+'</span></div>'
       +'<div class="rally-meta"><span>시작 '+formatRallyDate(x.s.start)+'</span><span>종료 '+formatRallyDate(x.s.end)+'</span><span>집결장 '+escapeRallyHtml(x.r.leader)+'</span></div>'
       +(x.r.note?'<div class="rally-note">'+escapeRallyHtml(x.r.note)+'</div>':'')+'</div>'
-      +'<div class="rally-time '+timeClass+'"><strong>'+x.s.label+'</strong><span>'+(x.s.status==='ended'?'만료':'남음')+'</span></div>';
+      +'<div><div class="rally-time '+timeClass+'"><strong>'+x.s.label+'</strong><span>'+(x.s.status==='ended'?'만료':'남음')+'</span></div>'
+      +(x.s.status==='ended'?'':'<button class="rally-apply" onclick="applyRallyToDefense(\''+escapeRallyJs(x.r.id)+'\')">방어 적용</button>')+'</div>';
     list.appendChild(card);
   });
+}
+function applyRallyToDefense(rallyId){
+  var rally=rallyRows.find(function(r){return r.id===rallyId;});
+  if(!rally)return alert('집결 정보를 찾지 못했습니다.');
+  var end=parseRallyDate(rally.endsAt);
+  if(!end)return alert('종료 시간이 없는 집결은 적용할 수 없습니다.');
+  var remain=Math.max(0,Math.ceil((end-new Date())/1000));
+  if(remain<=0)return alert('이미 종료된 집결입니다.');
+  var leader=rally.leader&&rally.leader!=='집결장 미정'?rally.leader:'집결장'+(enemies.length+1);
+  var idx=enemies.findIndex(function(e){return e.name===leader;});
+  if(idx<0)idx=enemies.findIndex(function(e){return e.arrivalSec===undefined;});
+  if(idx<0){
+    if(enemies.length>=15)return alert('상대 집결장은 최대 15개까지 가능합니다.');
+    enemies.push({name:leader,march:30,arrivalSec:undefined,remainMin:4,remainSec:30,petOn:false,petStart:'',isSwitching:false});
+    idx=enemies.length-1;
+  }
+  enemies[idx].name=leader;
+  applyEnemyRemain(idx,remain);
+  alert(leader+'을(를) 상대 집결장 '+(idx+1)+'번에 적용했습니다.\n행군 시간(초)을 확인한 뒤 유저 출발 시간을 복사하세요.');
 }
 function loadRallies(){
   var status=document.getElementById('rally-load-status'), dot=document.getElementById('rally-dot'), updated=document.getElementById('rally-updated');
@@ -431,13 +454,20 @@ function setOpenByRemain(i){
   var secEl=document.getElementById('remain-sec-'+i);
   var min=minEl?parseInt(minEl.value)||0:0;
   var sec=secEl?parseInt(secEl.value)||0:0;
-  var arrSec=((nowUTC()+min*60+sec+enemies[i].march)%86400+86400)%86400;
+  var arrSec=applyEnemyRemain(i,min*60+sec);
+  var btn=document.getElementById('now-btn-'+i);
+  if(btn){btn.textContent='✅ '+fmtTime(arrSec);btn.classList.add('flashed');setTimeout(function(){btn.textContent='⚡ 적용';btn.classList.remove('flashed');},2000);}
+}
+function applyEnemyRemain(i,totalSec){
+  if(!enemies[i])return undefined;
+  var min=Math.floor(totalSec/60);
+  var sec=totalSec%60;
+  var arrSec=((nowUTC()+totalSec+enemies[i].march)%86400+86400)%86400;
   enemies[i].arrivalSec=arrSec;
   enemies[i].remainMin=min;
   enemies[i].remainSec=sec;
   calcMember();
-  var btn=document.getElementById('now-btn-'+i);
-  if(btn){btn.textContent='✅ '+fmtTime(arrSec);btn.classList.add('flashed');setTimeout(function(){btn.textContent='⚡ 적용';btn.classList.remove('flashed');},2000);}
+  return arrSec;
 }
 
 // 집결원
