@@ -1,6 +1,5 @@
 const fs = require("fs");
 const path = require("path");
-const readline = require("readline");
 const { execFileSync, spawnSync } = require("child_process");
 const { createWorker } = require("tesseract.js");
 
@@ -8,117 +7,180 @@ const ROOT = path.resolve(__dirname, "..");
 const SCREENSHOT_DIR = path.join(__dirname, "screenshots");
 const RALLIES_FILE = path.join(ROOT, "rallies.json");
 const CAPTURE_SCRIPT = path.join(__dirname, "capture-ldplayer.ps1");
+const CONFIG_FILE = path.join(__dirname, "rally-config.json");
 const INTERVAL_MS = 1000;
+const OCR_SOURCE = "ldplayer-safe-ocr";
 
 const args = new Set(process.argv.slice(2));
 const once = args.has("--once");
 const publish = args.has("--publish");
+const keepManual = args.has("--keep-manual");
 const imageArgIndex = process.argv.indexOf("--image");
 const imagePath = imageArgIndex >= 0 ? path.resolve(process.argv[imageArgIndex + 1] || "") : "";
 
-let lastSignature = "";
 let worker;
+let lastSignature = "";
+
+function readConfig() {
+  if (!fs.existsSync(CONFIG_FILE)) return { slotLeaders: [], defaultTarget: "Alliance Flag" };
+  try {
+    const parsed = JSON.parse(fs.readFileSync(CONFIG_FILE, "utf8"));
+    return {
+      slotLeaders: Array.isArray(parsed.slotLeaders) ? parsed.slotLeaders : [],
+      defaultTarget: parsed.defaultTarget || "Alliance Flag"
+    };
+  } catch {
+    return { slotLeaders: [], defaultTarget: "Alliance Flag" };
+  }
+}
 
 function ensureDir(dir) {
   fs.mkdirSync(dir, { recursive: true });
 }
 
-function runPowerShell(script, outputFile) {
+function runCapture(outputFile) {
   execFileSync("powershell", [
     "-NoProfile",
     "-ExecutionPolicy",
     "Bypass",
     "-File",
-    script,
+    CAPTURE_SCRIPT,
     "-OutFile",
     outputFile
   ], { stdio: "pipe" });
 }
 
-function parseDuration(value) {
-  const raw = String(value);
-  const match = raw.match(/(\d{1,2})\s*[:：]\s*(\d{2})\s*[:：]\s*(\d{2})/);
-  if (match) return Number(match[1]) * 3600 + Number(match[2]) * 60 + Number(match[3]);
-
-  let digits = raw.replace(/\D/g, "");
-  if (digits.length === 7 && digits.startsWith("00")) {
-    digits = digits.slice(0, 2) + digits.slice(-4);
-  }
-  if (digits.length === 6) {
-    return Number(digits.slice(0, 2)) * 3600 + Number(digits.slice(2, 4)) * 60 + Number(digits.slice(4, 6));
-  }
-  if (digits.length === 4) {
-    return Number(digits.slice(0, 2)) * 60 + Number(digits.slice(2, 4));
-  }
-  return null;
-}
-
-function isoFromRemaining(seconds, detectedAt = new Date()) {
-  return new Date(detectedAt.getTime() + seconds * 1000).toISOString();
-}
-
 function compactText(text) {
-  return text
+  return String(text)
     .replace(/[|]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
 
+function parseDuration(value) {
+  const raw = String(value);
+  const colon = raw.match(/(\d{1,2})\s*[:：]\s*(\d{2})\s*[:：]\s*(\d{2})/);
+  if (colon) return Number(colon[1]) * 3600 + Number(colon[2]) * 60 + Number(colon[3]);
+
+  let digits = raw.replace(/\D/g, "");
+  if (digits.length >= 7 && digits.startsWith("00")) digits = "00" + digits.slice(-4);
+  if (digits.length >= 6) {
+    digits = digits.slice(-6);
+    return Number(digits.slice(0, 2)) * 3600 + Number(digits.slice(2, 4)) * 60 + Number(digits.slice(4, 6));
+  }
+  if (digits.length === 4) return Number(digits.slice(0, 2)) * 60 + Number(digits.slice(2, 4));
+  return null;
+}
+
+function isoFromRemaining(seconds, detectedAt) {
+  return new Date(detectedAt.getTime() + seconds * 1000).toISOString();
+}
+
+function cleanBracketName(value) {
+  return String(value || "")
+    .replace(/\s+/g, "")
+    .replace(/[^\[\]a-zA-Z0-9가-힣_-]/g, "")
+    .trim();
+}
+
+function extractTargets(clean) {
+  const targets = [];
+  const targetPattern = /\[[^\]\s]{2,12}\]\s*(?:연\s*맹\s*)?깃\s*발/g;
+  for (const match of clean.matchAll(targetPattern)) {
+    const value = cleanBracketName(match[0].replace(/연\s*맹/g, "연맹").replace(/깃\s*발/g, "깃발"));
+    if (value && !targets.includes(value)) targets.push(value);
+  }
+  if (!targets.length && /\bKDH\b/i.test(clean)) targets.push("[KDH]연맹깃발");
+  return targets;
+}
+
+function extractLeaders(clean) {
+  const leaders = [];
+
+  const directPattern = /\[[^\]\s]{2,12}\]\s*[가-힣a-zA-Z0-9_ -]{2,18}/g;
+  for (const match of clean.matchAll(directPattern)) {
+    const value = cleanBracketName(match[0]);
+    if (!value) continue;
+    if (/KDH|연맹|깃발|목표|방어/i.test(value)) continue;
+    if (!leaders.includes(value)) leaders.push(value);
+  }
+
+  if (!leaders.length) {
+    const tagPattern = /\[\s*k\s*o\s*z\s*\]/ig;
+    let idx = 1;
+    for (const match of clean.matchAll(tagPattern)) {
+      const value = `[koz]OCR집결장${idx++}`;
+      if (!leaders.includes(value)) leaders.push(value);
+    }
+  }
+
+  return leaders;
+}
+
 function parseRallies(text, detectedAt = new Date()) {
   const clean = compactText(text);
+  const config = readConfig();
   if (/현재\s*전투가\s*없습니다/.test(clean)) return [];
 
-  const timeMatches = [...clean.matchAll(/집\s*결\s*중\s*[:：]?\s*([0-9\s:：]{4,12})/g)];
-  if (!timeMatches.length) return [];
-
-  const targetMatches = [...clean.matchAll(/\[[^\]\s]{2,12}\]\s*연맹\s*깃발/g)].map((m) => m[0].replace(/\s+/g, ""));
-  const leaderMatches = [...clean.matchAll(/\[[^\]\s]{2,12}\]\s*[^\s\[\]]{2,16}(?:팀장|입장|대장|장)?/g)]
-    .map((m) => m[0].replace(/\s+/g, ""))
-    .filter((value) => !/연맹깃발/.test(value) && !/KDH|목표|방어/.test(value));
-
-  return timeMatches.map((match, index) => {
+  const times = [];
+  const timePattern = /집\s*결\s*중\s*[:：]?\s*([0-9\s:：]{4,14})/g;
+  for (const match of clean.matchAll(timePattern)) {
     const remainingSeconds = parseDuration(match[1]);
-    if (remainingSeconds === null) return null;
-    const leader = leaderMatches[index] || leaderMatches[leaderMatches.length - 1] || `OCR 집결장 ${index + 1}`;
-    const target = targetMatches[index] || targetMatches[0] || "연맹 깃발";
+    if (remainingSeconds !== null && remainingSeconds > 0) times.push(remainingSeconds);
+  }
+  if (!times.length) return [];
+
+  const targets = extractTargets(clean);
+  const leaders = extractLeaders(clean);
+
+  return times.map((remainingSeconds, index) => {
+    const ocrLeader = leaders[index] || leaders[leaders.length - 1] || "";
+    const hintLeader = config.slotLeaders[index] || "";
+    const leader = ocrLeader && /[가-힣]/.test(ocrLeader) ? ocrLeader : hintLeader || ocrLeader || `OCR Rally ${index + 1}`;
+    const target = targets[index] || targets[0] || config.defaultTarget || "Alliance Flag";
+    const endsAt = isoFromRemaining(remainingSeconds, detectedAt);
     return {
-      id: `ocr-${leader}-${isoFromRemaining(remainingSeconds, detectedAt)}`.replace(/[^a-zA-Z0-9가-힣_-]/g, "-"),
-      title: `${leader} 집결`,
+      id: `ocr-${leader}-${index}`.replace(/[^a-zA-Z0-9가-힣_-]/g, "-"),
+      title: `${leader} rally`,
       target,
       leader,
       startsAt: null,
-      endsAt: isoFromRemaining(remainingSeconds, detectedAt),
-      note: "LD플레이어 안전모드 OCR 감지"
+      endsAt,
+      source: OCR_SOURCE,
+      note: "LDPlayer safe OCR"
     };
-  }).filter(Boolean);
-}
-
-function mergeRallies(existing, detected) {
-  const now = Date.now();
-  const activeExisting = existing.filter((rally) => {
-    if (!rally.endsAt) return true;
-    return new Date(rally.endsAt).getTime() > now;
   });
-
-  for (const rally of detected) {
-    const duplicate = activeExisting.some((item) => {
-      const sameLeader = item.leader === rally.leader;
-      const sameTarget = item.target === rally.target;
-      const itemEnd = item.endsAt ? new Date(item.endsAt).getTime() : 0;
-      const rallyEnd = rally.endsAt ? new Date(rally.endsAt).getTime() : 0;
-      return sameLeader && sameTarget && Math.abs(itemEnd - rallyEnd) < 15000;
-    });
-    if (!duplicate) activeExisting.push(rally);
-  }
-
-  activeExisting.sort((a, b) => new Date(a.endsAt || 8640000000000000) - new Date(b.endsAt || 8640000000000000));
-  return activeExisting;
 }
 
 function readRalliesFile() {
   if (!fs.existsSync(RALLIES_FILE)) return [];
   const parsed = JSON.parse(fs.readFileSync(RALLIES_FILE, "utf8"));
   return Array.isArray(parsed) ? parsed : parsed.rallies || [];
+}
+
+function sameRally(a, b) {
+  const sameLeader = a.leader === b.leader;
+  const sameTarget = a.target === b.target;
+  const aEnd = a.endsAt ? new Date(a.endsAt).getTime() : 0;
+  const bEnd = b.endsAt ? new Date(b.endsAt).getTime() : 0;
+  return sameLeader && sameTarget && Math.abs(aEnd - bEnd) < 20000;
+}
+
+function syncRallies(existing, detected) {
+  const now = Date.now();
+  const manual = keepManual
+    ? existing.filter((rally) => rally.source !== OCR_SOURCE && (!rally.endsAt || new Date(rally.endsAt).getTime() > now))
+    : [];
+
+  const synced = [];
+  for (const rally of detected) {
+    const previous = existing.find((item) => item.source === OCR_SOURCE && sameRally(item, rally));
+    synced.push(previous ? { ...rally, id: previous.id } : rally);
+  }
+
+  return manual.concat(synced).sort((a, b) => {
+    return new Date(a.endsAt || 8640000000000000) - new Date(b.endsAt || 8640000000000000);
+  });
 }
 
 function writeRalliesFile(rallies) {
@@ -128,21 +190,12 @@ function writeRalliesFile(rallies) {
   }, null, 2) + "\n", "utf8");
 }
 
-function ask(question) {
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-  return new Promise((resolve) => {
-    rl.question(question, (answer) => {
-      rl.close();
-      resolve(answer.trim().toLowerCase());
-    });
-  });
-}
-
 function pushToGithub() {
   const status = spawnSync("git", ["status", "--short", "rallies.json"], { cwd: ROOT, encoding: "utf8" });
   if (!status.stdout.trim()) return;
+
   spawnSync("git", ["add", "rallies.json"], { cwd: ROOT, stdio: "inherit" });
-  spawnSync("git", ["commit", "-m", "Update rally status data"], { cwd: ROOT, stdio: "inherit" });
+  spawnSync("git", ["commit", "-m", "Sync rally status data"], { cwd: ROOT, stdio: "inherit" });
   spawnSync("git", ["-c", "http.sslBackend=openssl", "push", "origin", "master"], { cwd: ROOT, stdio: "inherit" });
 }
 
@@ -155,57 +208,40 @@ async function getWorker() {
 async function scanOnce() {
   ensureDir(SCREENSHOT_DIR);
   const screenshot = imagePath || path.join(SCREENSHOT_DIR, `ldplayer-${Date.now()}.png`);
-  if (!imagePath) {
-    runPowerShell(CAPTURE_SCRIPT, screenshot);
-  } else if (!fs.existsSync(screenshot)) {
-    throw new Error(`캡처 파일이 없습니다: ${screenshot}`);
-  }
+  if (!imagePath) runCapture(screenshot);
+  if (!fs.existsSync(screenshot)) throw new Error(`Missing screenshot: ${screenshot}`);
 
   const ocrWorker = await getWorker();
   const result = await ocrWorker.recognize(screenshot);
   const detectedAt = new Date();
-  const rallies = parseRallies(result.data.text, detectedAt);
-  const signature = JSON.stringify(rallies.map((r) => [r.leader, r.target, r.endsAt]));
-
-  if (!rallies.length) {
-    console.log(`[${detectedAt.toLocaleTimeString()}] 집결 없음 또는 인식 실패`);
-    return;
-  }
+  const detected = parseRallies(result.data.text, detectedAt);
+  const synced = syncRallies(readRalliesFile(), detected);
+  const signature = JSON.stringify(synced.map((r) => [r.leader, r.target, r.endsAt, r.source]));
 
   if (signature === lastSignature) {
-    console.log(`[${detectedAt.toLocaleTimeString()}] 같은 집결 감지됨, 중복 등록 안 함`);
+    console.log(`[${detectedAt.toLocaleTimeString()}] no change`);
     return;
   }
   lastSignature = signature;
 
-  console.log("\n감지된 집결 후보:");
-  rallies.forEach((rally, index) => {
-    const endsAt = new Date(rally.endsAt);
-    console.log(`${index + 1}. ${rally.leader} / ${rally.target} / 종료 예정 ${endsAt.toLocaleTimeString()}`);
-  });
+  writeRalliesFile(synced);
 
-  const answer = await ask("사이트 집결 현황에 반영할까요? (y/N) ");
-  if (answer !== "y" && answer !== "yes") {
-    console.log("취소했습니다.");
-    return;
-  }
-
-  const merged = mergeRallies(readRalliesFile(), rallies);
-  writeRalliesFile(merged);
-  console.log("rallies.json을 갱신했습니다.");
-
-  if (publish) {
-    pushToGithub();
+  if (!detected.length) {
+    console.log(`[${detectedAt.toLocaleTimeString()}] no visible rallies; OCR rallies cleared`);
   } else {
-    console.log("GitHub 반영은 아래 명령으로 할 수 있습니다:");
-    console.log("git -c http.sslBackend=openssl push origin master");
+    console.log(`[${detectedAt.toLocaleTimeString()}] synced ${detected.length} visible rally/rallies`);
+    detected.forEach((rally, index) => {
+      console.log(`${index + 1}. ${rally.leader} / ${rally.target} / ends ${new Date(rally.endsAt).toLocaleTimeString()}`);
+    });
   }
+
+  if (publish) pushToGithub();
 }
 
 async function main() {
-  console.log("LD플레이어 안전모드 OCR 감시를 시작합니다.");
-  console.log("게임은 연맹 전쟁 > 집결 탭을 열어둔 상태여야 합니다.");
-  console.log("게임 클릭/참여는 하지 않고, 화면 읽기와 확인 후 데이터 갱신만 합니다.\n");
+  console.log("LDPlayer safe OCR sync started.");
+  console.log("Keep the game on Alliance War > Rally tab.");
+  console.log("No clicks or game actions are performed. Visible rally list is synced automatically.\n");
 
   if (once) {
     await scanOnce();
@@ -220,7 +256,7 @@ async function main() {
 }
 
 main().catch(async (error) => {
-  console.error("오류:", error.message);
+  console.error("Error:", error.message);
   if (worker) await worker.terminate();
   process.exit(1);
 });

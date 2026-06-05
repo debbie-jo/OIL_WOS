@@ -6,7 +6,8 @@
   "scripts": {
     "capture:safe": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/capture-ldplayer.ps1 -OutFile tools/screenshots/latest.png",
     "scan:safe": "node tools/safe-rally-monitor.js --once --image tools/screenshots/latest.png",
-    "watch:safe": "node tools/safe-rally-monitor.js"
+    "scan:publish": "node tools/safe-rally-monitor.js --once --image tools/screenshots/latest.png --publish",
+    "watch:safe": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/watch-safe.ps1"
   },
   "dependencies": {
     "tesseract.js": "^6.0.1"
