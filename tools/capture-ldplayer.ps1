@@ -51,8 +51,8 @@ if (-not $OutFile) {
   throw "OutFile is required."
 }
 
-$target = [IntPtr]::Zero
-$targetProcessId = 0
+$script:target = [IntPtr]::Zero
+$script:targetProcessId = 0
 [Win32Capture]::EnumWindows({
   param($hWnd, $lParam)
   if (-not [Win32Capture]::IsWindowVisible($hWnd)) { return $true }
@@ -75,6 +75,9 @@ $targetProcessId = 0
   }
   return $true
 }, [IntPtr]::Zero) | Out-Null
+
+$target = $script:target
+$targetProcessId = $script:targetProcessId
 
 if ($target -eq [IntPtr]::Zero) {
   throw "LDPlayer window was not found. Keep LDPlayer open and visible."

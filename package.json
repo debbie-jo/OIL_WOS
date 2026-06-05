@@ -9,6 +9,7 @@
     "scan:publish": "node tools/safe-rally-monitor.js --once --image tools/screenshots/latest.png --publish",
     "check:supabase": "node tools/check-supabase.js",
     "clear:ocr": "node tools/clear-ocr-rallies.js",
+    "watch:publish": "node tools/safe-rally-monitor.js --publish",
     "watch:safe": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/watch-safe.ps1"
   },
   "dependencies": {

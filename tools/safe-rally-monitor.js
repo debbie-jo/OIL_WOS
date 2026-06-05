@@ -23,6 +23,7 @@ const imagePath = imageArgIndex >= 0 ? path.resolve(process.argv[imageArgIndex +
 
 let worker;
 let lastSignature = "";
+let noBattleStreak = 0;
 
 function readEnv() {
   const env = { ...process.env };
@@ -360,11 +361,22 @@ async function scanOnce() {
     ? { rallies: regionRallies, confident: true, reason: "time-regions" }
     : parseRallies(result.data.text, detectedAt);
   if (!parsed.confident) {
+    noBattleStreak = 0;
     console.log(`[${detectedAt.toLocaleTimeString()}] OCR unclear; keeping previous rally data`);
     return;
   }
 
   const detected = parsed.rallies;
+  if (!detected.length && parsed.reason === "no-battle") {
+    noBattleStreak += 1;
+    if (noBattleStreak < 2) {
+      console.log(`[${detectedAt.toLocaleTimeString()}] no battle seen once; waiting one more check before clearing`);
+      return;
+    }
+  } else {
+    noBattleStreak = 0;
+  }
+
   const synced = syncRallies(readRalliesFile(), detected);
   const signature = JSON.stringify(synced.map((r) => [r.leader, r.target, r.endsAt, r.source]));
 
