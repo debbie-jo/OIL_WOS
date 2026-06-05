@@ -176,7 +176,7 @@ tr:hover td{background:#151f30;}
       <div class="rally-toolbar" style="margin-bottom:0;">
         <button class="rally-filter active" onclick="setRallyFilter('active',this)">진행중</button>
         <button class="rally-filter" onclick="setRallyFilter('all',this)">전체</button>
-        <button class="rally-filter" onclick="loadRallies()">새로고침</button>
+        <button class="rally-filter" onclick="loadRallies(true)">새로고침</button>
       </div>
     </div>
     <div id="rally-updated" style="font-size:11px;color:var(--muted);margin-bottom:10px;">업데이트 대기중</div>
@@ -282,6 +282,11 @@ function normalizeRallies(data){
 function escapeRallyHtml(v){return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');}
 function escapeRallyJs(v){return String(v).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,'\\n').replace(/\r/g,'');}
 function rallyDomKey(v){return String(v).replace(/[^a-zA-Z0-9_-]/g,'_');}
+function isRallyEditing(){
+  var active=document.activeElement;
+  var list=document.getElementById('rally-list');
+  return !!(active&&list&&list.contains(active)&&(active.tagName==='INPUT'||active.tagName==='TEXTAREA'||active.tagName==='SELECT'));
+}
 function getRallyRemainSeconds(rally){
   var end=parseRallyDate(rally.endsAt);
   if(!end)return 0;
@@ -292,6 +297,7 @@ function findEnemyMarch(leader){
   return found?found.march:30;
 }
 function renderRallies(){
+  if(isRallyEditing())return;
   var list=document.getElementById('rally-list'), empty=document.getElementById('rally-empty');
   if(!list||!empty)return;
   var visible=rallyRows.map(function(r){return{r:r,s:getRallyState(r)};}).filter(function(x){return rallyFilter==='all'||x.s.status!=='ended';}).sort(function(a,b){
@@ -351,7 +357,8 @@ function applyRallyToDefense(rallyId){
   applyEnemyRemain(idx,remain);
   alert(leader+'을(를) 상대 집결장 '+(idx+1)+'번에 적용했습니다.\n목표: '+((targetInput&&targetInput.value.trim())||rally.target||'대상 미정')+'\n남은 시간 '+Math.floor(remain/60)+'분 '+(remain%60)+'초 + 행군 '+march+'초로 계산했습니다.');
 }
-function loadRallies(){
+function loadRallies(force){
+  if(!force&&isRallyEditing())return;
   var status=document.getElementById('rally-load-status'), dot=document.getElementById('rally-dot'), updated=document.getElementById('rally-updated');
   if(status)status.textContent='집결 데이터를 불러오는 중';
   if(dot)dot.classList.remove('ready');
@@ -676,8 +683,8 @@ renderHost();
 renderEnemies();
 renderMemberTable();
 renderSwTable();
-loadRallies();
-setInterval(function(){renderRallies();loadRallies();},5000);
+loadRallies(true);
+setInterval(function(){loadRallies(false);},5000);
 </script>
 </body>
 </html>

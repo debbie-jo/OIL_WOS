@@ -52,6 +52,7 @@ if (-not $OutFile) {
 }
 
 $target = [IntPtr]::Zero
+$targetProcessId = 0
 [Win32Capture]::EnumWindows({
   param($hWnd, $lParam)
   if (-not [Win32Capture]::IsWindowVisible($hWnd)) { return $true }
@@ -69,6 +70,7 @@ $target = [IntPtr]::Zero
 
   if (($title -and ($title -match $TitlePattern)) -or ($procName -and ($procName -match $ProcessPattern))) {
     $script:target = $hWnd
+    $script:targetProcessId = $pidValue
     return $false
   }
   return $true
@@ -80,7 +82,13 @@ if ($target -eq [IntPtr]::Zero) {
 
 [void][Win32Capture]::ShowWindow($target, 9)
 [void][Win32Capture]::SetForegroundWindow($target)
-Start-Sleep -Milliseconds 600
+try {
+  $shell = New-Object -ComObject WScript.Shell
+  [void]$shell.AppActivate([int]$targetProcessId)
+} catch {}
+[void][Win32Capture]::ShowWindow($target, 9)
+[void][Win32Capture]::SetForegroundWindow($target)
+Start-Sleep -Milliseconds 1500
 
 $rect = New-Object Win32Capture+RECT
 [void][Win32Capture]::GetWindowRect($target, [ref]$rect)
