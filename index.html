@@ -158,6 +158,23 @@ tr:hover td{background:#151f30;}
 <div class="section" id="member">
   <div class="info-box">적 집결 알림이 오면 → 남은 집결 시간 입력 후 ⚡ 적용<br>집결 끝나면 → 집결장 행군 시간 입력</div>
 
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap;">
+      <div>
+        <div class="card-title" style="margin-bottom:4px;">집결 현황</div>
+        <div class="rally-status"><span class="rally-dot" id="rally-dot"></span><span id="rally-load-status">집결 데이터를 불러오는 중</span></div>
+      </div>
+      <div class="rally-toolbar" style="margin-bottom:0;">
+        <button class="rally-filter active" onclick="setRallyFilter('active',this)">진행중</button>
+        <button class="rally-filter" onclick="setRallyFilter('all',this)">전체</button>
+        <button class="rally-filter" onclick="loadRallies()">새로고침</button>
+      </div>
+    </div>
+    <div id="rally-updated" style="font-size:11px;color:var(--muted);margin-bottom:10px;">업데이트 대기중</div>
+    <div id="rally-list" class="rally-list"></div>
+    <div id="rally-empty" class="rally-empty" style="display:none;">열린 집결이 없습니다.<br>새 집결이 등록되면 이곳에 자동으로 표시됩니다.</div>
+  </div>
+
   <!-- 상대 집결장 -->
   <div class="card">
     <div class="section-sub">상대 집결장 정보</div>
@@ -206,23 +223,6 @@ tr:hover td{background:#151f30;}
     <div class="table-wrap" id="sw-table-wrap"></div>
     <div style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center;">딜레이 = 적 도착 후 몇 초 뒤에 내가 도착할지</div>
   </div>
-</div>
-
-<div class="card">
-  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap;">
-    <div>
-      <div class="card-title" style="margin-bottom:4px;">집결 현황</div>
-      <div class="rally-status"><span class="rally-dot" id="rally-dot"></span><span id="rally-load-status">집결 데이터를 불러오는 중</span></div>
-    </div>
-    <div class="rally-toolbar" style="margin-bottom:0;">
-      <button class="rally-filter active" onclick="setRallyFilter('active',this)">진행중</button>
-      <button class="rally-filter" onclick="setRallyFilter('all',this)">전체</button>
-      <button class="rally-filter" onclick="loadRallies()">새로고침</button>
-    </div>
-  </div>
-  <div id="rally-updated" style="font-size:11px;color:var(--muted);margin-bottom:10px;">업데이트 대기중</div>
-  <div id="rally-list" class="rally-list"></div>
-  <div id="rally-empty" class="rally-empty" style="display:none;">열린 집결이 없습니다.<br>새 집결이 등록되면 이곳에 자동으로 표시됩니다.</div>
 </div>
 
 <div style="text-align:center;padding:20px 0 30px;font-size:12px;color:#334155;letter-spacing:1px;">🐾 Made by 데비 🐾</div>
