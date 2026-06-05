@@ -1,4 +1,15 @@
 {
-  "updatedAt": "2026-06-05T06:33:09.270Z",
-  "rallies": []
+  "updatedAt": "2026-06-05T06:33:16.731Z",
+  "rallies": [
+    {
+      "id": "ocr--koz-데비팀장-0",
+      "title": "[koz]데비팀장 rally",
+      "target": "[KDH]연맹깃발",
+      "leader": "[koz]데비팀장",
+      "startsAt": null,
+      "endsAt": "2026-06-05T07:09:00.726Z",
+      "source": "ldplayer-safe-ocr",
+      "note": "LDPlayer safe OCR"
+    }
+  ]
 }
