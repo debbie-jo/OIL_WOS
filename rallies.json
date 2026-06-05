@@ -1,4 +1,14 @@
 {
-  "updatedAt": null,
-  "rallies": []
+  "updatedAt": "2026-06-05T06:13:39.830Z",
+  "rallies": [
+    {
+      "id": "ocr-OCR-집결장-1-2026-06-05T07-13-14-212Z",
+      "title": "OCR 집결장 1 집결",
+      "target": "연맹 깃발",
+      "leader": "OCR 집결장 1",
+      "startsAt": null,
+      "endsAt": "2026-06-05T07:13:14.212Z",
+      "note": "LD플레이어 안전모드 OCR 감지"
+    }
+  ]
 }
