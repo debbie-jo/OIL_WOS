@@ -1,23 +1,23 @@
 {
-  "updatedAt": "2026-06-05T06:50:35.608Z",
+  "updatedAt": "2026-06-05T06:50:42.990Z",
   "rallies": [
-    {
-      "id": "ocr--koz-데비팀장-0",
-      "title": "[koz]데비팀장 rally",
-      "target": "[KDH]연맹깃발",
-      "leader": "[koz]데비팀장",
-      "startsAt": null,
-      "endsAt": "2026-06-05T06:50:47.603Z",
-      "source": "ldplayer-safe-ocr",
-      "note": "LDPlayer safe OCR"
-    },
     {
       "id": "ocr--koz-데비입장-1",
       "title": "[koz]데비입장 rally",
       "target": "[KDH]연맹깃발",
       "leader": "[koz]데비입장",
       "startsAt": null,
-      "endsAt": "2026-06-05T07:03:32.603Z",
+      "endsAt": "2026-06-05T06:50:54.985Z",
+      "source": "ldplayer-safe-ocr",
+      "note": "LDPlayer safe OCR"
+    },
+    {
+      "id": "ocr--koz-데비팀장-0",
+      "title": "[koz]데비팀장 rally",
+      "target": "[KDH]연맹깃발",
+      "leader": "[koz]데비팀장",
+      "startsAt": null,
+      "endsAt": "2026-06-05T07:03:09.985Z",
       "source": "ldplayer-safe-ocr",
       "note": "LDPlayer safe OCR"
     }
