@@ -8,6 +8,7 @@ const SCREENSHOT_DIR = path.join(__dirname, "screenshots");
 const RALLIES_FILE = path.join(ROOT, "rallies.json");
 const CAPTURE_SCRIPT = path.join(__dirname, "capture-ldplayer.ps1");
 const CONFIG_FILE = path.join(__dirname, "rally-config.json");
+const ENV_FILE = path.join(ROOT, ".env");
 const INTERVAL_MS = 1000;
 const OCR_SOURCE = "ldplayer-safe-ocr";
 
@@ -21,6 +22,22 @@ const imagePath = imageArgIndex >= 0 ? path.resolve(process.argv[imageArgIndex +
 
 let worker;
 let lastSignature = "";
+
+function readEnv() {
+  const env = { ...process.env };
+  if (!fs.existsSync(ENV_FILE)) return env;
+
+  for (const line of fs.readFileSync(ENV_FILE, "utf8").split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const index = trimmed.indexOf("=");
+    if (index < 0) continue;
+    const key = trimmed.slice(0, index).trim();
+    const value = trimmed.slice(index + 1).trim();
+    env[key] = value;
+  }
+  return env;
+}
 
 function readConfig() {
   if (!fs.existsSync(CONFIG_FILE)) return { slotLeaders: [], defaultTarget: "Alliance Flag" };
@@ -60,7 +77,7 @@ function compactText(text) {
 
 function parseDuration(value) {
   const raw = String(value);
-  const colon = raw.match(/(\d{1,2})\s*[:：]\s*(\d{2})\s*[:：]\s*(\d{2})/);
+  const colon = raw.match(/(\d{1,2})\s*[:\uFF1A]\s*(\d{2})\s*[:\uFF1A]\s*(\d{2})/);
   if (colon) return Number(colon[1]) * 3600 + Number(colon[2]) * 60 + Number(colon[3]);
 
   let digits = raw.replace(/\D/g, "");
@@ -80,68 +97,62 @@ function isoFromRemaining(seconds, detectedAt) {
 function cleanBracketName(value) {
   return String(value || "")
     .replace(/\s+/g, "")
-    .replace(/[^\[\]a-zA-Z0-9가-힣_-]/g, "")
+    .replace(/[^\[\]a-zA-Z0-9\uAC00-\uD7A3_-]/g, "")
     .trim();
 }
 
-function extractTargets(clean) {
+function extractTargets(clean, config) {
   const targets = [];
-  const targetPattern = /\[[^\]\s]{2,12}\]\s*(?:연\s*맹\s*)?깃\s*발/g;
+  const targetPattern = /\[[^\]\s]{2,12}\]\s*(?:\uC5F0\s*\uB9F9\s*)?\uAE43\s*\uBC1C/g;
   for (const match of clean.matchAll(targetPattern)) {
-    const value = cleanBracketName(match[0].replace(/연\s*맹/g, "연맹").replace(/깃\s*발/g, "깃발"));
+    const value = cleanBracketName(match[0].replace(/\uC5F0\s*\uB9F9/g, "\uC5F0\uB9F9").replace(/\uAE43\s*\uBC1C/g, "\uAE43\uBC1C"));
     if (value && !targets.includes(value)) targets.push(value);
   }
-  if (!targets.length && /\bKDH\b/i.test(clean)) targets.push("[KDH]연맹깃발");
+  if (!targets.length && /\bKDH\b/i.test(clean)) targets.push(config.defaultTarget);
   return targets;
 }
 
 function extractLeaders(clean) {
   const leaders = [];
-
-  const directPattern = /\[[^\]\s]{2,12}\]\s*[가-힣a-zA-Z0-9_ -]{2,18}/g;
+  const directPattern = /\[[^\]\s]{2,12}\]\s*[\uAC00-\uD7A3a-zA-Z0-9_ -]{2,18}/g;
   for (const match of clean.matchAll(directPattern)) {
     const value = cleanBracketName(match[0]);
     if (!value) continue;
-    if (/KDH|연맹|깃발|목표|방어/i.test(value)) continue;
+    if (/KDH/i.test(value)) continue;
+    if (/[\uC5F0\uB9F9\uAE43\uBC1C\uBAA9\uD45C\uBC29\uC5B4]/.test(value) && /\uC5F0\uB9F9|\uAE43\uBC1C|\uBAA9\uD45C|\uBC29\uC5B4/.test(value)) continue;
     if (!leaders.includes(value)) leaders.push(value);
   }
-
-  if (!leaders.length) {
-    const tagPattern = /\[\s*k\s*o\s*z\s*\]/ig;
-    let idx = 1;
-    for (const match of clean.matchAll(tagPattern)) {
-      const value = `[koz]OCR집결장${idx++}`;
-      if (!leaders.includes(value)) leaders.push(value);
-    }
-  }
-
   return leaders;
 }
 
 function parseRallies(text, detectedAt = new Date()) {
   const clean = compactText(text);
   const config = readConfig();
-  const hasNoBattle = /현재\s*전투가\s*없습니다/.test(clean);
+  const noBattlePattern = /\uD604\s*\uC7AC\s*\uC804\s*\uD22C\s*\uAC00\s*\uC5C6\s*\uC2B5\s*\uB2C8\s*\uB2E4/;
+  const hasNoBattle = noBattlePattern.test(clean);
 
   const times = [];
-  const timePattern = /집\s*결\s*중\s*[:：]?\s*([0-9\s:：]{4,14})/g;
+  const timePattern = /\uC9D1\s*\uACB0\s*\uC911\s*[:\uFF1A]?\s*([0-9\s:\uFF1A]{4,14})/g;
   for (const match of clean.matchAll(timePattern)) {
     const remainingSeconds = parseDuration(match[1]);
     if (remainingSeconds !== null && remainingSeconds > 0) times.push(remainingSeconds);
   }
-  if (!times.length) return { rallies: [], confident: hasNoBattle, reason: hasNoBattle ? "no-battle" : "ocr-unclear" };
 
-  const targets = extractTargets(clean);
+  if (!times.length) {
+    return { rallies: [], confident: hasNoBattle, reason: hasNoBattle ? "no-battle" : "ocr-unclear" };
+  }
+
+  const targets = extractTargets(clean, config);
   const leaders = extractLeaders(clean);
 
   const rallies = times.map((remainingSeconds, index) => {
     const ocrLeader = leaders[index] || leaders[leaders.length - 1] || "";
     const hintLeader = config.slotLeaders[index] || "";
-    const leader = ocrLeader && /[가-힣]/.test(ocrLeader) ? ocrLeader : hintLeader || ocrLeader || `OCR Rally ${index + 1}`;
+    const leader = ocrLeader && /[\uAC00-\uD7A3]/.test(ocrLeader) ? ocrLeader : hintLeader || ocrLeader || `OCR Rally ${index + 1}`;
     const target = targets[index] || targets[0] || config.defaultTarget || "Alliance Flag";
     const endsAt = isoFromRemaining(remainingSeconds, detectedAt);
     return {
-      id: `ocr-${leader}-${index}`.replace(/[^a-zA-Z0-9가-힣_-]/g, "-"),
+      id: `ocr-${leader}-${index}`.replace(/[^\[\]a-zA-Z0-9\uAC00-\uD7A3_-]/g, "-"),
       title: `${leader} rally`,
       target,
       leader,
@@ -151,6 +162,7 @@ function parseRallies(text, detectedAt = new Date()) {
       note: "LDPlayer safe OCR"
     };
   });
+
   return { rallies, confident: true, reason: "rallies" };
 }
 
@@ -192,6 +204,53 @@ function writeRalliesFile(rallies) {
   }, null, 2) + "\n", "utf8");
 }
 
+function supabaseBaseUrl(env) {
+  const raw = env.SUPABASE_URL || "";
+  return raw.replace(/\/rest\/v1\/?$/, "").replace(/\/$/, "");
+}
+
+function toDbRow(rally) {
+  return {
+    id: rally.id,
+    title: rally.title,
+    target: rally.target,
+    leader: rally.leader,
+    starts_at: rally.startsAt,
+    ends_at: rally.endsAt,
+    source: rally.source,
+    note: rally.note,
+    updated_at: new Date().toISOString()
+  };
+}
+
+async function syncSupabase(rallies) {
+  const env = readEnv();
+  const baseUrl = supabaseBaseUrl(env);
+  const key = env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!baseUrl || !key) throw new Error("Missing Supabase service settings in .env");
+
+  const headers = {
+    apikey: key,
+    Authorization: `Bearer ${key}`,
+    "Content-Type": "application/json"
+  };
+
+  const deleteResponse = await fetch(`${baseUrl}/rest/v1/rallies?source=eq.${encodeURIComponent(OCR_SOURCE)}`, {
+    method: "DELETE",
+    headers
+  });
+  if (!deleteResponse.ok) throw new Error(`Supabase delete failed: ${deleteResponse.status} ${await deleteResponse.text()}`);
+
+  if (!rallies.length) return;
+
+  const insertResponse = await fetch(`${baseUrl}/rest/v1/rallies`, {
+    method: "POST",
+    headers: { ...headers, Prefer: "return=minimal" },
+    body: JSON.stringify(rallies.map(toDbRow))
+  });
+  if (!insertResponse.ok) throw new Error(`Supabase insert failed: ${insertResponse.status} ${await insertResponse.text()}`);
+}
+
 function pushToGithub() {
   const status = spawnSync("git", ["status", "--short", "rallies.json"], { cwd: ROOT, encoding: "utf8" });
   if (!status.stdout.trim()) return;
@@ -207,6 +266,17 @@ async function getWorker() {
   return worker;
 }
 
+async function publishRallies(rallies) {
+  try {
+    await syncSupabase(rallies);
+    console.log("Supabase synced.");
+  } catch (error) {
+    console.log(`Supabase sync failed: ${error.message}`);
+    console.log("Falling back to GitHub push.");
+    pushToGithub();
+  }
+}
+
 async function scanOnce() {
   ensureDir(SCREENSHOT_DIR);
   const screenshot = imagePath || path.join(SCREENSHOT_DIR, `ldplayer-${Date.now()}.png`);
@@ -216,9 +286,8 @@ async function scanOnce() {
   const ocrWorker = await getWorker();
   const result = await ocrWorker.recognize(screenshot);
   const detectedAt = new Date();
-  if (debug) {
-    fs.writeFileSync(path.join(SCREENSHOT_DIR, "latest-ocr.txt"), result.data.text, "utf8");
-  }
+  if (debug) fs.writeFileSync(path.join(SCREENSHOT_DIR, "latest-ocr.txt"), result.data.text, "utf8");
+
   const parsed = parseRallies(result.data.text, detectedAt);
   if (!parsed.confident) {
     console.log(`[${detectedAt.toLocaleTimeString()}] OCR unclear; keeping previous rally data`);
@@ -246,7 +315,7 @@ async function scanOnce() {
     });
   }
 
-  if (publish) pushToGithub();
+  if (publish) await publishRallies(synced);
 }
 
 async function main() {

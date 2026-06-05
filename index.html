@@ -246,6 +246,8 @@ function nowUTC(){var n=new Date();return n.getUTCHours()*3600+n.getUTCMinutes()
 function copyToClipboard(text,btn){navigator.clipboard.writeText(text).then(function(){var o=btn.textContent;btn.textContent='✅ 복사됨!';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},2000);});}
 
 // 집결 현황
+var SUPABASE_REST_URL='https://zylgtevqcfexhtvuxjqf.supabase.co/rest/v1';
+var SUPABASE_ANON_KEY='sb_publishable_LwFlxOVCj79SX9zQ-kqwow__zhwn10s';
 var rallyRows=[];
 var rallyFilter='active';
 function parseRallyDate(v){if(!v)return null;var d=new Date(v);return isNaN(d.getTime())?null:d;}
@@ -267,7 +269,7 @@ function normalizeRallies(data){
   var rows=Array.isArray(data)?data:data.rallies;
   if(!Array.isArray(rows))return[];
   return rows.filter(function(r){return r&&r.title;}).map(function(r,i){
-    return{id:r.id||'rally-'+i,title:r.title,target:r.target||'대상 미정',leader:r.leader||'집결장 미정',startsAt:r.startsAt||null,endsAt:r.endsAt||null,note:r.note||''};
+    return{id:r.id||'rally-'+i,title:r.title,target:r.target||'대상 미정',leader:r.leader||'집결장 미정',startsAt:r.startsAt||r.starts_at||null,endsAt:r.endsAt||r.ends_at||null,note:r.note||''};
   });
 }
 function escapeRallyHtml(v){return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');}
@@ -316,7 +318,11 @@ function loadRallies(){
   var status=document.getElementById('rally-load-status'), dot=document.getElementById('rally-dot'), updated=document.getElementById('rally-updated');
   if(status)status.textContent='집결 데이터를 불러오는 중';
   if(dot)dot.classList.remove('ready');
-  fetch('rallies.json?t='+Date.now()).then(function(res){if(!res.ok)throw new Error(res.status);return res.json();}).then(function(data){
+  fetch(SUPABASE_REST_URL+'/rallies?select=id,title,target,leader,starts_at,ends_at,source,note,updated_at&order=ends_at.asc&t='+Date.now(),{
+    headers:{apikey:SUPABASE_ANON_KEY,Authorization:'Bearer '+SUPABASE_ANON_KEY}
+  }).then(function(res){if(!res.ok)throw new Error(res.status);return res.json();}).catch(function(){
+    return fetch('rallies.json?t='+Date.now()).then(function(res){if(!res.ok)throw new Error(res.status);return res.json();});
+  }).then(function(data){
     rallyRows=normalizeRallies(data);
     if(status)status.textContent='집결 데이터 연결됨';
     if(dot)dot.classList.add('ready');

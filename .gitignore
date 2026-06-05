@@ -3,3 +3,4 @@ node_modules/
 tools/screenshots/
 tools/*.log
 *.traineddata
+.env
