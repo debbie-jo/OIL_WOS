@@ -7,6 +7,7 @@
     "capture:safe": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/capture-ldplayer.ps1 -OutFile tools/screenshots/latest.png",
     "scan:safe": "node tools/safe-rally-monitor.js --once --image tools/screenshots/latest.png",
     "scan:publish": "node tools/safe-rally-monitor.js --once --image tools/screenshots/latest.png --publish",
+    "check:supabase": "node tools/check-supabase.js",
     "watch:safe": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/watch-safe.ps1"
   },
   "dependencies": {
