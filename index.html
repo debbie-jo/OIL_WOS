@@ -66,13 +66,13 @@ tr:hover td{background:#151f30;}
 .mode-btn.active{background:var(--accent);color:white;}
 .member-mode{display:none;}
 .member-mode.active{display:block;}
-.enemy-list-compact{display:grid;gap:8px;overflow-x:auto;}
-.enemy-row{display:grid;grid-template-columns:150px 220px 68px 104px 112px 118px 32px;gap:8px;align-items:center;min-width:850px;background:#141c2d;border:1px solid var(--border);border-radius:9px;padding:9px;}
+.enemy-list-compact{display:grid;gap:8px;overflow-x:auto;align-items:start;}
+.enemy-row{display:grid;grid-template-columns:118px 220px 68px 104px 112px 118px 32px;gap:8px;align-items:center;width:max-content;max-width:100%;background:#141c2d;border:1px solid var(--border);border-radius:9px;padding:9px;}
 .enemy-row-head{background:#182235;color:#cbd5e1;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:7px 9px;}
 .enemy-row-head span{text-align:center;}
 .enemy-row-head span:first-child{text-align:left;}
 .enemy-name-wrap{display:flex;align-items:center;gap:6px;min-width:0;}
-.enemy-name-wrap .enemy-badge{min-width:78px;text-align:center;}
+.enemy-name-wrap .enemy-badge{min-width:96px;max-width:108px;text-align:center;}
 .enemy-remain{display:flex;align-items:center;gap:5px;justify-content:center;}
 .enemy-march-cell{display:flex;justify-content:center;}
 .enemy-options{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
@@ -207,9 +207,9 @@ tr:hover td{background:#151f30;}
     <div class="card">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;">
         <div class="card-title" style="margin-bottom:0;">유저 일괄 입력</div>
-        <button class="action-btn" onclick="toggleBulkInput()" id="bulk-toggle-btn">펼치기</button>
+        <button class="action-btn" onclick="toggleBulkInput()" id="bulk-toggle-btn">접기</button>
       </div>
-      <div class="bulk-body collapsed" id="bulk-body">
+      <div class="bulk-body" id="bulk-body">
         <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">형식: 닉네임 행군시간 담당집결장번호(쉼표구분)<br>예) 홍길동 30 1 / 김철수 32 1,3</div>
         <textarea id="bulk-input" placeholder="홍길동 30 1&#10;김철수 32 1,3&#10;이영희 35 2"></textarea>
         <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
@@ -436,10 +436,15 @@ function copyHost(){
 }
 
 // 상대 집결장
-var enemies=[
-  {name:'집결장1',march:30,arrivalSec:undefined,remainMin:4,remainSec:30,petOn:false,petStart:'',isSwitching:false},
-  {name:'집결장2',march:32,arrivalSec:undefined,remainMin:4,remainSec:30,petOn:false,petStart:'',isSwitching:false}
-];
+function defaultEnemyRemain(index){
+  var total=Math.max(0,270-index*10);
+  return {min:Math.floor(total/60),sec:total%60};
+}
+function makeEnemy(index,march){
+  var remain=defaultEnemyRemain(index);
+  return {name:'집결장'+(index+1),march:march||30,arrivalSec:undefined,remainMin:remain.min,remainSec:remain.sec,petOn:false,petStart:'',isSwitching:false};
+}
+var enemies=[makeEnemy(0,30),makeEnemy(1,32)];
 
 function renderEnemies(){
   var list=document.getElementById('enemy-list');
@@ -593,7 +598,7 @@ function clearMembers(){
 }
 
 function calcMember(){renderEnemies();renderMemberTable();renderSwTable();}
-function addEnemy(){if(enemies.length>=15)return;enemies.push({name:'집결장'+(enemies.length+1),march:30,arrivalSec:undefined,remainMin:4,remainSec:30,petOn:false,petStart:'',isSwitching:false});calcMember();}
+function addEnemy(){if(enemies.length>=15)return;enemies.push(makeEnemy(enemies.length,30));calcMember();}
 function removeEnemy(i){enemies.splice(i,1);calcMember();}
 function addMemberRow(){memberRows.push({name:'',march:30,target:0,swDelay:10});renderMemberTable();}
 function removeMemberRow(i){memberRows.splice(i,1);renderMemberTable();renderSwTable();}
