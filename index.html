@@ -113,6 +113,9 @@ tr:hover td{background:#151f30;}
 .enemy-tools .section-sub{margin-bottom:0;}
 .enemy-list-actions{display:flex;gap:8px;flex-wrap:wrap;}
 .enemy-add-btn{display:block;width:min(100%,1220px);margin-left:auto;margin-right:auto;}
+.member-bulk-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;background:#101827;border:1px solid var(--border);border-radius:9px;padding:8px 10px;}
+.member-bulk-actions span{font-size:12px;color:#bfdbfe;font-weight:700;}
+.member-select{width:16px;height:16px;cursor:pointer;}
 .target-select{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:4px;font-family:var(--sans);font-size:11px;color:var(--text);cursor:pointer;outline:none;width:100%;}
 .info-box{background:#0f1a2e;border:1px solid #1e3a5f;border-radius:8px;padding:10px 14px;font-size:12px;color:var(--accent2);margin-bottom:14px;line-height:1.6;}
 .pet-inline{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#1a1030;border:1px solid #3b2060;border-radius:8px;padding:8px 10px;margin-top:6px;}
@@ -138,7 +141,7 @@ tr:hover td{background:#151f30;}
 .col-0{background:#1a1200;color:#fde68a;}.col-1{background:#120a1f;color:#c4b5fd;}.col-2{background:#0a1520;color:#7dd3fc;}.col-3{background:#1f0a0a;color:#fca5a5;}.col-4{background:#0a1f12;color:#6ee7b7;}.col-5{background:#141400;color:#fef08a;}
 .col-6{background:#1a1200;color:#fde68a;}.col-7{background:#120a1f;color:#c4b5fd;}.col-8{background:#0a1520;color:#7dd3fc;}.col-9{background:#1f0a0a;color:#fca5a5;}.col-10{background:#0a1f12;color:#6ee7b7;}.col-11{background:#141400;color:#fef08a;}
 .col-12{background:#1a1200;color:#fde68a;}.col-13{background:#120a1f;color:#c4b5fd;}.col-14{background:#0a1520;color:#7dd3fc;}
-.col-num{width:28px;}.col-name{width:140px;}.col-march{width:75px;}.col-delay{width:65px;}.col-target{width:95px;}.col-result{width:115px;}.col-del{width:32px;}.col-pet{width:40px;}
+.col-select{width:38px;}.col-num{width:28px;}.col-name{width:140px;}.col-march{width:75px;}.col-delay{width:65px;}.col-target{width:95px;}.col-result{width:115px;}.col-del{width:32px;}.col-pet{width:40px;}
 @media(max-width:480px){
   .setting-row{grid-template-columns:1fr;}
   .enemy-grid{grid-template-columns:1fr;}
@@ -146,7 +149,7 @@ tr:hover td{background:#151f30;}
   .battle-grid{grid-template-columns:1fr;}
   .battle-member-row{grid-template-columns:minmax(70px,1fr) 72px 88px;}
   table{font-size:12px;}
-  .col-num{width:20px;}.col-name{width:70px;}.col-march{width:46px;}.col-delay{width:46px;}.col-target{width:56px;}.col-result{width:72px;}.col-del{width:20px;}.col-pet{width:30px;}
+  .col-select{width:24px;}.col-num{width:20px;}.col-name{width:70px;}.col-march{width:46px;}.col-delay{width:46px;}.col-target{width:56px;}.col-result{width:72px;}.col-del{width:20px;}.col-pet{width:30px;}
   body{padding:14px 10px;}
 }
 </style>
@@ -244,11 +247,17 @@ tr:hover td{background:#151f30;}
           <button class="copy-btn" onclick="copyAllMembers(-1,this)" id="copy-all-btn">📋 전체 복사</button>
         </div>
       </div>
+      <div class="member-bulk-actions">
+        <span>선택 수비원</span>
+        <select class="target-select" id="selected-target" style="width:180px;"></select>
+        <button class="action-btn" onclick="applySelectedMembers()">선택 적용</button>
+        <button class="action-btn" onclick="clearMemberSelection()">선택 해제</button>
+      </div>
       <div id="member-copy-btns" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;"></div>
       <div class="table-wrap">
         <table>
-          <colgroup><col class="col-num"><col class="col-name"><col class="col-march"><col class="col-target"><col class="col-result"><col class="col-del"></colgroup>
-          <thead><tr><th>#</th><th style="text-align:left;padding-left:6px;">닉네임</th><th>행군(초)</th><th>타겟</th><th>출발 시간</th><th></th></tr></thead>
+          <colgroup><col class="col-select"><col class="col-num"><col class="col-name"><col class="col-march"><col class="col-target"><col class="col-result"><col class="col-del"></colgroup>
+          <thead><tr><th><input class="member-select" type="checkbox" onchange="toggleAllMembers(this.checked)"></th><th>#</th><th style="text-align:left;padding-left:6px;">닉네임</th><th>행군(초)</th><th>타겟</th><th>출발 시간</th><th></th></tr></thead>
           <tbody id="member-tbody"></tbody>
         </table>
       </div>
@@ -564,12 +573,18 @@ function renderMemberTable(){
       return '<button class="copy-btn '+colorClass(j)+'" onclick="copyAllMembers('+j+',this)" style="font-size:11px;padding:4px 10px;">📋 '+e.name+' 복사</button>';
     }).join('');
   }
+  var selectedTarget=document.getElementById('selected-target');
+  if(selectedTarget){
+    var prev=selectedTarget.value;
+    selectedTarget.innerHTML=enemies.map(function(e,j){return'<option value="'+j+'">'+e.name+'</option>';}).join('');
+    if(prev!==''&&enemies[parseInt(prev)])selectedTarget.value=prev;
+  }
   document.getElementById('member-tbody').innerHTML=memberRows.map(function(row,i){
     var opts=enemies.map(function(e,j){return'<option value="'+j+'" '+(row.target===j?'selected':'')+'>'+e.name+'</option>';}).join('');
     var e=enemies[row.target];
     var dep='—',colClass='';
     if(e&&e.arrivalSec!==undefined){dep=fmtMS(e.arrivalSec-row.march);colClass=colorClass(row.target);}
-    return '<tr><td class="num-cell">'+(i+1)+'</td>'
+    return '<tr><td><input class="member-select" type="checkbox" '+(row.selected?'checked':'')+' onchange="memberRows['+i+'].selected=this.checked;saveState()"></td><td class="num-cell">'+(i+1)+'</td>'
       +'<td><input class="name-input" value="'+row.name+'" placeholder="닉네임" oninput="memberRows['+i+'].name=this.value;renderSwTable();saveState()"></td>'
       +'<td><input class="march-input" type="number" value="'+row.march+'" min="0" inputmode="numeric" onchange="memberRows['+i+'].march=parseInt(this.value)||0;renderMemberTable();renderSwTable()"></td>'
       +'<td><select class="target-select" onchange="memberRows['+i+'].target=parseInt(this.value);renderMemberTable();renderSwTable()">'+opts+'</select></td>'
@@ -594,7 +609,7 @@ function applyBulkInput(){
     var targets=parts[2]?parts[2].split(',').map(function(t){return parseInt(t.trim())-1;}).filter(function(t){return t>=0&&t<enemies.length;}):[0];
     if(!targets.length)targets=[0];
     targets.forEach(function(target){
-      newRows.push({name:name,march:march,target:target,swDelay:10});
+      newRows.push({name:name,march:march,target:target,swDelay:10,selected:false});
     });
   });
   if(!newRows.length)return alert('올바른 형식으로 입력해주세요!\n예) 홍길동 30 1');
@@ -673,8 +688,32 @@ function sortEnemiesByArrival(){
   applyEnemyOrder(ordered.map(function(x){return x.old;}));
   calcMember();
 }
-function addMemberRow(){memberRows.push({name:'',march:30,target:0,swDelay:10});renderMemberTable();}
+function addMemberRow(){memberRows.push({name:'',march:30,target:0,swDelay:10,selected:false});renderMemberTable();}
 function removeMemberRow(i){memberRows.splice(i,1);renderMemberTable();renderSwTable();}
+function toggleAllMembers(checked){
+  memberRows.forEach(function(row){row.selected=checked;});
+  renderMemberTable();
+}
+function clearMemberSelection(){
+  memberRows.forEach(function(row){row.selected=false;});
+  renderMemberTable();
+}
+function applySelectedMembers(){
+  var targetEl=document.getElementById('selected-target');
+  var target=targetEl?parseInt(targetEl.value):0;
+  var changed=0;
+  memberRows.forEach(function(row){
+    if(row.selected){
+      row.target=target;
+      row.selected=false;
+      changed++;
+    }
+  });
+  if(!changed)return alert('선택된 수비원이 없어요!');
+  sortMemberRowsByTarget();
+  renderMemberTable();
+  renderSwTable();
+}
 
 function copyAllMembers(targetIdx,btnOverride){
   var lines=memberRows.filter(function(r){
