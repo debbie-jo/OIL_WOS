@@ -66,13 +66,13 @@ tr:hover td{background:#151f30;}
 .mode-btn.active{background:var(--accent);color:white;}
 .member-mode{display:none;}
 .member-mode.active{display:block;}
-.enemy-list-compact{display:grid;gap:8px;overflow-x:auto;align-items:start;}
-.enemy-row{display:grid;grid-template-columns:118px 220px 68px 104px 112px 118px 32px;gap:8px;align-items:center;width:max-content;max-width:100%;background:#141c2d;border:1px solid var(--border);border-radius:9px;padding:9px;}
+.enemy-list-compact{display:grid;gap:8px;overflow-x:auto;align-items:start;width:min(100%,1060px);margin:0 auto;}
+.enemy-row{display:grid;grid-template-columns:132px 220px 68px 104px 112px minmax(116px,1fr) 32px;gap:8px;align-items:center;width:100%;background:#141c2d;border:1px solid var(--border);border-radius:9px;padding:9px;}
 .enemy-row-head{background:#182235;color:#cbd5e1;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:7px 9px;}
 .enemy-row-head span{text-align:center;}
 .enemy-row-head span:first-child{text-align:left;}
 .enemy-name-wrap{display:flex;align-items:center;gap:6px;min-width:0;}
-.enemy-name-wrap .enemy-badge{min-width:96px;max-width:108px;text-align:center;}
+.enemy-name-wrap .enemy-badge{width:108px;text-align:center;}
 .enemy-remain{display:flex;align-items:center;gap:5px;justify-content:center;}
 .enemy-march-cell{display:flex;justify-content:center;}
 .enemy-options{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
@@ -105,6 +105,10 @@ tr:hover td{background:#151f30;}
 .battle-count{display:flex;align-items:center;justify-content:flex-end;gap:5px;white-space:nowrap;}
 .battle-count-label{font-size:10px;font-weight:700;color:#93c5fd;}
 .bulk-body.collapsed{display:none;}
+.enemy-tools{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;}
+.enemy-tools .section-sub{margin-bottom:0;}
+.enemy-list-actions{display:flex;gap:8px;flex-wrap:wrap;}
+.enemy-add-btn{display:block;width:min(100%,1060px);margin-left:auto;margin-right:auto;}
 .target-select{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:4px;font-family:var(--sans);font-size:11px;color:var(--text);cursor:pointer;outline:none;width:100%;}
 .info-box{background:#0f1a2e;border:1px solid #1e3a5f;border-radius:8px;padding:10px 14px;font-size:12px;color:var(--accent2);margin-bottom:14px;line-height:1.6;}
 .pet-inline{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#1a1030;border:1px solid #3b2060;border-radius:8px;padding:8px 10px;margin-top:6px;}
@@ -198,9 +202,14 @@ tr:hover td{background:#151f30;}
   <div class="member-mode active" id="member-mode-input">
     <!-- 상대 집결장 -->
     <div class="card">
-      <div class="section-sub">상대 집결장 정보</div>
+      <div class="enemy-tools">
+        <div class="section-sub">상대 집결장 정보</div>
+        <div class="enemy-list-actions">
+          <button class="action-btn" onclick="clearSavedState()">저장값 초기화</button>
+        </div>
+      </div>
       <div id="enemy-list"></div>
-      <button class="add-btn" onclick="addEnemy()">+ 상대 집결장 추가</button>
+      <button class="add-btn enemy-add-btn" onclick="addEnemy()">+ 상대 집결장 추가</button>
     </div>
 
     <!-- 일괄 입력 -->
@@ -457,7 +466,7 @@ function renderEnemies(){
     var rMin=e.remainMin!==undefined?e.remainMin:4;
     var rSec=e.remainSec!==undefined?e.remainSec:30;
     return '<div class="enemy-row">'
-      +'<div class="enemy-name-wrap"><span class="enemy-badge '+badgeClass(i)+'"><input class="enemy-name-input" value="'+e.name+'" oninput="enemies['+i+'].name=this.value;renderMemberTable();renderSwTable();renderBattleView();saveState()"></span>'+(e.isSwitching?'<span class="sw-tag">스위칭</span>':'')+'</div>'
+      +'<div class="enemy-name-wrap"><span class="enemy-badge '+badgeClass(i)+'"><input class="enemy-name-input" value="'+e.name+'" oninput="enemies['+i+'].name=this.value;renderMemberTable();renderSwTable();renderBattleView();saveState()"></span></div>'
       +'<div class="enemy-remain"><input class="mini-input" type="number" id="remain-min-'+i+'" value="'+rMin+'" min="0" max="59" inputmode="numeric"><span>분</span><input class="mini-input" type="number" id="remain-sec-'+i+'" value="'+rSec+'" min="0" max="59" inputmode="numeric"><span>초</span><button class="now-btn" id="now-btn-'+i+'" onclick="setOpenByRemain('+i+')" style="padding:6px 9px;font-size:11px;">적용</button></div>'
       +'<div class="enemy-march-cell"><input class="mini-input" type="number" value="'+e.march+'" min="0" inputmode="numeric" onchange="enemies['+i+'].march=parseInt(this.value)||0;calcMember()"></div>'
       +'<div class="inline-time countdown" id="enemy-countdown-'+i+'">'+countdown+'</div>'
