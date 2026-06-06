@@ -83,6 +83,12 @@ tr:hover td{background:#151f30;}
 .rally-time.ended{background:#1f0a0a;color:#fca5a5;border-color:#991b1b;}
 .rally-time strong{display:block;font-size:15px;}
 .rally-time span{display:block;font-family:var(--sans);font-size:10px;margin-top:2px;color:inherit;}
+.rally-preview{margin-top:8px;border:1px solid #1e3a5f;background:#0f1a2e;border-radius:8px;padding:8px;min-width:132px;}
+.rally-preview-title{font-size:10px;font-weight:700;color:#93c5fd;margin-bottom:6px;}
+.rally-preview-line{display:flex;justify-content:space-between;gap:8px;font-size:11px;color:var(--muted);line-height:1.6;}
+.rally-preview-line strong{font-family:var(--mono);font-size:12px;color:#f8fafc;}
+.rally-preview-total{margin-top:6px;padding-top:6px;border-top:1px solid #1e3a5f;color:#fde68a;}
+.rally-preview-total strong{color:#fde68a;}
 .rally-apply{margin-top:8px;background:#1a2e1a;border:1px solid #2d5a2d;border-radius:7px;color:#4ade80;font-family:var(--sans);font-size:12px;font-weight:700;padding:6px 10px;cursor:pointer;width:100%;}
 .rally-apply:hover{border-color:#86efac;color:#86efac;}
 .rally-empty{text-align:center;padding:22px 10px;color:var(--muted);font-size:13px;border:1px dashed var(--border);border-radius:10px;}
@@ -238,7 +244,7 @@ tr:hover td{background:#151f30;}
 
 <script>
 function updateClock(){var n=new Date();document.getElementById('utc-clock').textContent=[n.getUTCHours(),n.getUTCMinutes(),n.getUTCSeconds()].map(function(v){return String(v).padStart(2,'0');}).join(':');}
-setInterval(updateClock,1000);updateClock();
+setInterval(function(){updateClock();updateAllRallyPreviews();},1000);updateClock();
 
 function switchTab(tab){
   ['host','member','switching'].forEach(function(t){document.getElementById(t).classList.toggle('active',t===tab);});
@@ -247,6 +253,7 @@ function switchTab(tab){
 
 function fmtTime(s){s=((s%86400)+86400)%86400;return[Math.floor(s/3600),Math.floor((s%3600)/60),s%60].map(function(v){return String(v).padStart(2,'0');}).join(':');}
 function fmtMS(s){s=((s%86400)+86400)%86400;return[Math.floor((s%3600)/60),s%60].map(function(v){return String(v).padStart(2,'0');}).join(':');}
+function fmtDuration(sec){sec=Math.max(0,Math.floor(sec||0));var h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60),s=sec%60;if(h>0)return h+'시간 '+m+'분 '+s+'초';if(m>0)return m+'분 '+s+'초';return s+'초';}
 function parseSecs(str){str=str.replace(/[^0-9]/g,'');if(!str)return 0;if(str.length<=2)return parseInt(str)*3600;if(str.length<=4)return parseInt(str.slice(0,2))*3600+parseInt(str.slice(2))*60;return parseInt(str.slice(0,2))*3600+parseInt(str.slice(2,4))*60+parseInt(str.slice(4,6)||0);}
 function autoColon(input){var v=input.value.replace(/[^0-9]/g,'').slice(0,6);if(v.length>=5)v=v.slice(0,2)+':'+v.slice(2,4)+':'+v.slice(4);else if(v.length>=3)v=v.slice(0,2)+':'+v.slice(2);input.value=v;}
 function nowUTC(){var n=new Date();return n.getUTCHours()*3600+n.getUTCMinutes()*60+n.getUTCSeconds();}
@@ -296,6 +303,44 @@ function findEnemyMarch(leader){
   var found=enemies.find(function(e){return e.name===leader;});
   return found?found.march:30;
 }
+function getRallyPreviewValues(key){
+  var minInput=document.getElementById('rally-min-'+key);
+  var secInput=document.getElementById('rally-sec-'+key);
+  var marchInput=document.getElementById('rally-march-'+key);
+  var remain=(parseInt(minInput&&minInput.value)||0)*60+(parseInt(secInput&&secInput.value)||0);
+  var march=parseInt(marchInput&&marchInput.value)||0;
+  var total=remain+march;
+  return{remain:remain,march:march,total:total,arrival:((nowUTC()+total)%86400+86400)%86400};
+}
+function renderRallyPreviewHtml(key,remain,march){
+  var total=remain+march;
+  var arrival=((nowUTC()+total)%86400+86400)%86400;
+  return '<div class="rally-preview" id="rally-preview-'+key+'">'
+    +'<div class="rally-preview-title">적 도착 계산</div>'
+    +'<div class="rally-preview-line"><span>집결 남음</span><strong data-role="remain">'+fmtDuration(remain)+'</strong></div>'
+    +'<div class="rally-preview-line"><span>행군</span><strong data-role="march">'+fmtDuration(march)+'</strong></div>'
+    +'<div class="rally-preview-line rally-preview-total"><span>도착까지</span><strong data-role="total">'+fmtDuration(total)+'</strong></div>'
+    +'<div class="rally-preview-line"><span>도착 UTC</span><strong data-role="arrival">'+fmtTime(arrival)+'</strong></div>'
+    +'</div>';
+}
+function updateRallyPreview(key){
+  var preview=document.getElementById('rally-preview-'+key);
+  if(!preview)return;
+  var values=getRallyPreviewValues(key);
+  var remainEl=preview.querySelector('[data-role="remain"]');
+  var marchEl=preview.querySelector('[data-role="march"]');
+  var totalEl=preview.querySelector('[data-role="total"]');
+  var arrivalEl=preview.querySelector('[data-role="arrival"]');
+  if(remainEl)remainEl.textContent=fmtDuration(values.remain);
+  if(marchEl)marchEl.textContent=fmtDuration(values.march);
+  if(totalEl)totalEl.textContent=fmtDuration(values.total);
+  if(arrivalEl)arrivalEl.textContent=fmtTime(values.arrival);
+}
+function updateAllRallyPreviews(){
+  document.querySelectorAll('.rally-preview').forEach(function(el){
+    updateRallyPreview(el.id.replace('rally-preview-',''));
+  });
+}
 function renderRallies(){
   if(isRallyEditing())return;
   var list=document.getElementById('rally-list'), empty=document.getElementById('rally-empty');
@@ -323,11 +368,12 @@ function renderRallies(){
       +'<div><label>목표</label><input id="rally-target-'+key+'" type="text" value="'+escapeRallyHtml(x.r.target)+'"></div>'
       +'</div>'
       +'<div class="rally-small-row">'
-      +'<div><label>남은 분</label><input id="rally-min-'+key+'" type="number" min="0" value="'+remainMin+'"></div>'
-      +'<div><label>남은 초</label><input id="rally-sec-'+key+'" type="number" min="0" max="59" value="'+remainSecond+'"></div>'
-      +'<div><label>행군 초</label><input id="rally-march-'+key+'" type="number" min="0" value="'+march+'"></div>'
+      +'<div><label>남은 분</label><input id="rally-min-'+key+'" type="number" min="0" value="'+remainMin+'" oninput="updateRallyPreview(\''+key+'\')"></div>'
+      +'<div><label>남은 초</label><input id="rally-sec-'+key+'" type="number" min="0" max="59" value="'+remainSecond+'" oninput="updateRallyPreview(\''+key+'\')"></div>'
+      +'<div><label>행군 초</label><input id="rally-march-'+key+'" type="number" min="0" value="'+march+'" oninput="updateRallyPreview(\''+key+'\')"></div>'
       +'</div></div>'
       +'<div><div class="rally-time '+timeClass+'"><strong>'+x.s.label+'</strong><span>'+(x.s.status==='ended'?'만료':'남음')+'</span></div>'
+      +renderRallyPreviewHtml(key,remainSec,march)
       +(x.s.status==='ended'?'':'<button class="rally-apply" onclick="applyRallyToDefense(\''+escapeRallyJs(x.r.id)+'\')">방어 적용</button>')+'</div>';
     list.appendChild(card);
   });
@@ -338,13 +384,11 @@ function applyRallyToDefense(rallyId){
   var key=rallyDomKey(rally.id);
   var leaderInput=document.getElementById('rally-leader-'+key);
   var targetInput=document.getElementById('rally-target-'+key);
-  var minInput=document.getElementById('rally-min-'+key);
-  var secInput=document.getElementById('rally-sec-'+key);
-  var marchInput=document.getElementById('rally-march-'+key);
-  var remain=(parseInt(minInput&&minInput.value)||0)*60+(parseInt(secInput&&secInput.value)||0);
+  var values=getRallyPreviewValues(key);
+  var remain=values.remain;
   if(remain<=0)return alert('이미 종료된 집결입니다.');
   var leader=(leaderInput&&leaderInput.value.trim())||rally.leader||'집결장'+(enemies.length+1);
-  var march=parseInt(marchInput&&marchInput.value)||30;
+  var march=values.march||30;
   var idx=enemies.findIndex(function(e){return e.name===leader;});
   if(idx<0)idx=enemies.findIndex(function(e){return e.arrivalSec===undefined;});
   if(idx<0){
@@ -354,8 +398,8 @@ function applyRallyToDefense(rallyId){
   }
   enemies[idx].name=leader;
   enemies[idx].march=march;
-  applyEnemyRemain(idx,remain);
-  alert(leader+'을(를) 상대 집결장 '+(idx+1)+'번에 적용했습니다.\n목표: '+((targetInput&&targetInput.value.trim())||rally.target||'대상 미정')+'\n남은 시간 '+Math.floor(remain/60)+'분 '+(remain%60)+'초 + 행군 '+march+'초로 계산했습니다.');
+  var arrSec=applyEnemyRemain(idx,remain);
+  alert(leader+'을(를) 상대 집결장 '+(idx+1)+'번에 적용했습니다.\n목표: '+((targetInput&&targetInput.value.trim())||rally.target||'대상 미정')+'\n집결 남음 '+fmtDuration(remain)+' + 행군 '+fmtDuration(march)+'\n도착까지 '+fmtDuration(remain+march)+' / 적 도착 UTC '+fmtTime(arrSec));
 }
 function loadRallies(force){
   if(!force&&isRallyEditing())return;
