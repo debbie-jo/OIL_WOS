@@ -251,6 +251,9 @@ tr:hover td{background:#151f30;}
         <span>선택 수비원</span>
         <select class="target-select" id="selected-target" style="width:180px;"></select>
         <button class="action-btn" onclick="applySelectedMembers()">선택 적용</button>
+        <button class="action-btn" onclick="applyMemberRange(0,10)">1~10 적용</button>
+        <button class="action-btn" onclick="applyMemberRange(10,20)">11~20 적용</button>
+        <button class="action-btn" onclick="applyMemberRange(20,30)">21~30 적용</button>
         <button class="action-btn" onclick="clearMemberSelection()">선택 해제</button>
       </div>
       <div id="member-copy-btns" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;"></div>
@@ -317,7 +320,8 @@ function fmtCountdownMs(ms){if(ms===undefined||ms===null)return '—';var sec=Ma
 function parseSecs(str){str=str.replace(/[^0-9]/g,'');if(!str)return 0;if(str.length<=2)return parseInt(str)*3600;if(str.length<=4)return parseInt(str.slice(0,2))*3600+parseInt(str.slice(2))*60;return parseInt(str.slice(0,2))*3600+parseInt(str.slice(2,4))*60+parseInt(str.slice(4,6)||0);}
 function autoColon(input){var v=input.value.replace(/[^0-9]/g,'').slice(0,6);if(v.length>=5)v=v.slice(0,2)+':'+v.slice(2,4)+':'+v.slice(4);else if(v.length>=3)v=v.slice(0,2)+':'+v.slice(2);input.value=v;}
 function nowUTC(){var n=new Date();return n.getUTCHours()*3600+n.getUTCMinutes()*60+n.getUTCSeconds();}
-function copyToClipboard(text,btn){navigator.clipboard.writeText(text).then(function(){var o=btn.textContent;btn.textContent='✅ 복사됨!';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},2000);});}
+function cleanCopyText(text){return text.split(/\r?\n/).map(function(line){return line.trim();}).filter(Boolean).join('\n');}
+function copyToClipboard(text,btn){navigator.clipboard.writeText(cleanCopyText(text)).then(function(){var o=btn.textContent;btn.textContent='✅ 복사됨!';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},2000);});}
 function badgeClass(i){return 'badge-'+(i%15);}
 function colorClass(i){return 'col-'+(i%15);}
 
@@ -749,6 +753,21 @@ function applySelectedMembers(){
   });
   if(!changed)return alert('선택된 수비원이 없어요!');
   sortMemberRowsByTarget();
+  renderMemberTable();
+  renderSwTable();
+}
+function applyMemberRange(start,end){
+  var targetEl=document.getElementById('selected-target');
+  var target=targetEl?parseInt(targetEl.value):0;
+  var changed=0;
+  for(var i=start;i<end&&i<memberRows.length;i++){
+    if(memberRows[i].name.trim()){
+      setMemberTarget(memberRows[i],target);
+      memberRows[i].selected=false;
+      changed++;
+    }
+  }
+  if(!changed)return alert((start+1)+'~'+end+'번 범위에 적용할 수비원이 없어요!');
   renderMemberTable();
   renderSwTable();
 }
