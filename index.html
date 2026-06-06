@@ -362,6 +362,8 @@ function restoreState(){
     if(Array.isArray(data.hostRows))hostRows=data.hostRows;
     if(Array.isArray(data.enemies))enemies=data.enemies;
     if(Array.isArray(data.memberRows))memberRows=data.memberRows;
+    ensureEnemyIds();
+    syncMemberTargetIndexes();
   }catch(e){
     localStorage.removeItem(STORAGE_KEY);
   }finally{
@@ -460,15 +462,40 @@ function copyHost(){
 }
 
 // 상대 집결장
+var enemySeq=0;
+function nextEnemyId(){enemySeq+=1;return 'enemy-'+Date.now()+'-'+enemySeq;}
 function defaultEnemyRemain(index){
   var total=Math.max(0,270-index*10);
   return {min:Math.floor(total/60),sec:total%60};
 }
 function makeEnemy(index,march){
   var remain=defaultEnemyRemain(index);
-  return {name:'집결장'+(index+1),march:march||30,arrivalSec:undefined,remainMin:remain.min,remainSec:remain.sec,petOn:false,petStart:'',isSwitching:false};
+  return {id:nextEnemyId(),name:'집결장'+(index+1),march:march||30,arrivalSec:undefined,remainMin:remain.min,remainSec:remain.sec,petOn:false,petStart:'',isSwitching:false};
 }
 var enemies=[makeEnemy(0,30),makeEnemy(1,32)];
+
+function ensureEnemyIds(){
+  enemies.forEach(function(e){if(!e.id)e.id=nextEnemyId();});
+}
+function getMemberTargetIndex(row){
+  ensureEnemyIds();
+  if(row.targetId){
+    var idx=enemies.findIndex(function(e){return e.id===row.targetId;});
+    if(idx>=0)return idx;
+  }
+  var fallback=Math.min(Math.max(parseInt(row.target)||0,0),Math.max(enemies.length-1,0));
+  row.target=fallback;
+  row.targetId=enemies[fallback]?enemies[fallback].id:undefined;
+  return fallback;
+}
+function setMemberTarget(row,target){
+  target=Math.min(Math.max(parseInt(target)||0,0),Math.max(enemies.length-1,0));
+  row.target=target;
+  row.targetId=enemies[target]?enemies[target].id:undefined;
+}
+function syncMemberTargetIndexes(){
+  memberRows.forEach(function(row){setMemberTarget(row,getMemberTargetIndex(row));});
+}
 
 function renderEnemies(){
   var list=document.getElementById('enemy-list');
@@ -512,7 +539,7 @@ function updateBattleCountdowns(){
     if(el)el.textContent=e.arrivalAtMs?fmtCountdownMs(e.arrivalAtMs-Date.now()):'—';
   });
   memberRows.forEach(function(row,i){
-    var e=enemies[row.target];
+    var e=enemies[getMemberTargetIndex(row)];
     var el=document.getElementById('battle-member-arrive-'+i);
     if(el)el.textContent=e&&e.arrivalAtMs?fmtCountdownMs(e.arrivalAtMs-Date.now()):'—';
   });
@@ -528,7 +555,7 @@ function renderBattleView(){
   }
   if(memberWrap){
     var groups=enemies.map(function(e,j){
-      var rows=memberRows.map(function(r,idx){return{r:r,idx:idx};}).filter(function(x){return x.r.target===j&&x.r.name.trim();});
+      var rows=memberRows.map(function(r,idx){return{r:r,idx:idx};}).filter(function(x){return getMemberTargetIndex(x.r)===j&&x.r.name.trim();});
       if(!rows.length)return '';
       var rowHtml=rows.map(function(x){
         var depart=e.arrivalSec!==undefined?fmtMS(e.arrivalSec-x.r.march):'—';
@@ -564,7 +591,11 @@ function applyEnemyRemain(i,totalSec){
 }
 
 // 집결원
-var memberRows=[{name:'',march:30,target:0},{name:'',march:32,target:0},{name:'',march:35,target:1}];
+var memberRows=[
+  {name:'',march:30,target:0,targetId:enemies[0].id},
+  {name:'',march:32,target:0,targetId:enemies[0].id},
+  {name:'',march:35,target:1,targetId:enemies[1].id}
+];
 
 function renderMemberTable(){
   var memberCopyBtns=document.getElementById('member-copy-btns');
@@ -580,14 +611,15 @@ function renderMemberTable(){
     if(prev!==''&&enemies[parseInt(prev)])selectedTarget.value=prev;
   }
   document.getElementById('member-tbody').innerHTML=memberRows.map(function(row,i){
-    var opts=enemies.map(function(e,j){return'<option value="'+j+'" '+(row.target===j?'selected':'')+'>'+e.name+'</option>';}).join('');
-    var e=enemies[row.target];
+    var targetIdx=getMemberTargetIndex(row);
+    var opts=enemies.map(function(e,j){return'<option value="'+j+'" '+(targetIdx===j?'selected':'')+'>'+e.name+'</option>';}).join('');
+    var e=enemies[targetIdx];
     var dep='—',colClass='';
-    if(e&&e.arrivalSec!==undefined){dep=fmtMS(e.arrivalSec-row.march);colClass=colorClass(row.target);}
+    if(e&&e.arrivalSec!==undefined){dep=fmtMS(e.arrivalSec-row.march);colClass=colorClass(targetIdx);}
     return '<tr><td><input class="member-select" type="checkbox" '+(row.selected?'checked':'')+' onchange="memberRows['+i+'].selected=this.checked;saveState()"></td><td class="num-cell">'+(i+1)+'</td>'
       +'<td><input class="name-input" value="'+row.name+'" placeholder="닉네임" oninput="memberRows['+i+'].name=this.value;renderSwTable();saveState()"></td>'
       +'<td><input class="march-input" type="number" value="'+row.march+'" min="0" inputmode="numeric" onchange="memberRows['+i+'].march=parseInt(this.value)||0;renderMemberTable();renderSwTable()"></td>'
-      +'<td><select class="target-select" onchange="memberRows['+i+'].target=parseInt(this.value);renderMemberTable();renderSwTable()">'+opts+'</select></td>'
+      +'<td><select class="target-select" onchange="setMemberTarget(memberRows['+i+'],this.value);renderMemberTable();renderSwTable()">'+opts+'</select></td>'
       +'<td><span class="result-utc '+colClass+'">'+dep+'</span></td>'
       +'<td><button class="del-btn" onclick="removeMemberRow('+i+')">×</button></td></tr>';
   }).join('');
@@ -609,7 +641,7 @@ function applyBulkInput(){
     var targets=parts[2]?parts[2].split(',').map(function(t){return parseInt(t.trim())-1;}).filter(function(t){return t>=0&&t<enemies.length;}):[0];
     if(!targets.length)targets=[0];
     targets.forEach(function(target){
-      newRows.push({name:name,march:march,target:target,swDelay:10,selected:false});
+      newRows.push({name:name,march:march,target:target,targetId:enemies[target]?enemies[target].id:undefined,swDelay:10,selected:false});
     });
   });
   if(!newRows.length)return alert('올바른 형식으로 입력해주세요!\n예) 홍길동 30 1');
@@ -630,17 +662,20 @@ function clearMembers(){
 function calcMember(){renderEnemies();renderMemberTable();renderSwTable();}
 function addEnemy(){if(enemies.length>=15)return;enemies.push(makeEnemy(enemies.length,30));calcMember();}
 function removeEnemy(i){
+  var removedId=enemies[i]?enemies[i].id:undefined;
   enemies.splice(i,1);
   memberRows.forEach(function(row){
-    if(row.target===i)row.target=Math.max(0,i-1);
-    else if(row.target>i)row.target-=1;
+    if(row.targetId===removedId)setMemberTarget(row,Math.max(0,i-1));
+    else setMemberTarget(row,getMemberTargetIndex(row));
   });
   sortMemberRowsByTarget();
   calcMember();
 }
 function sortMemberRowsByTarget(){
   memberRows=memberRows.map(function(row,idx){return{row:row,idx:idx};}).sort(function(a,b){
-    if(a.row.target!==b.row.target)return a.row.target-b.row.target;
+    var aTarget=getMemberTargetIndex(a.row);
+    var bTarget=getMemberTargetIndex(b.row);
+    if(aTarget!==bTarget)return aTarget-bTarget;
     return a.idx-b.idx;
   }).map(function(x){return x.row;});
 }
@@ -650,19 +685,12 @@ function moveEnemy(i,dir){
   var tmp=enemies[i];
   enemies[i]=enemies[next];
   enemies[next]=tmp;
-  memberRows.forEach(function(row){
-    if(row.target===i)row.target=next;
-    else if(row.target===next)row.target=i;
-  });
+  syncMemberTargetIndexes();
   sortMemberRowsByTarget();
   calcMember();
 }
-function applyEnemyOrder(oldIndexes){
-  var newTargetByOld={};
-  oldIndexes.forEach(function(oldIdx,newIdx){newTargetByOld[oldIdx]=newIdx;});
-  memberRows.forEach(function(row){
-    if(newTargetByOld[row.target]!==undefined)row.target=newTargetByOld[row.target];
-  });
+function applyEnemyOrder(){
+  syncMemberTargetIndexes();
   sortMemberRowsByTarget();
 }
 function resetEnemyTimes(){
@@ -685,10 +713,10 @@ function sortEnemiesByArrival(){
     return a.e.arrivalSec-b.e.arrivalSec;
   });
   enemies=ordered.map(function(x){return x.e;});
-  applyEnemyOrder(ordered.map(function(x){return x.old;}));
+  applyEnemyOrder();
   calcMember();
 }
-function addMemberRow(){memberRows.push({name:'',march:30,target:0,swDelay:10,selected:false});renderMemberTable();}
+function addMemberRow(){memberRows.push({name:'',march:30,target:0,targetId:enemies[0]?enemies[0].id:undefined,swDelay:10,selected:false});renderMemberTable();}
 function removeMemberRow(i){memberRows.splice(i,1);renderMemberTable();renderSwTable();}
 function toggleAllMembers(checked){
   memberRows.forEach(function(row){row.selected=checked;});
@@ -704,7 +732,7 @@ function applySelectedMembers(){
   var changed=0;
   memberRows.forEach(function(row){
     if(row.selected){
-      row.target=target;
+      setMemberTarget(row,target);
       row.selected=false;
       changed++;
     }
@@ -717,9 +745,10 @@ function applySelectedMembers(){
 
 function copyAllMembers(targetIdx,btnOverride){
   var lines=memberRows.filter(function(r){
-    return r.name.trim()&&(targetIdx<0||r.target===targetIdx);
+    var idx=getMemberTargetIndex(r);
+    return r.name.trim()&&(targetIdx<0||idx===targetIdx);
   }).map(function(r){
-    var e=enemies[r.target];if(!e||e.arrivalSec===undefined)return null;
+    var e=enemies[getMemberTargetIndex(r)];if(!e||e.arrivalSec===undefined)return null;
     return r.name+' '+fmtMS(e.arrivalSec-r.march);
   }).filter(Boolean);
   if(!lines.length)return alert('닉네임과 ⚡ 적용을 먼저 해주세요!');
@@ -753,7 +782,8 @@ function renderSwTable(){
 
   // 스위칭 집결장 담당 유저만
   var swRows=memberRows.filter(function(r){
-    return swEnemies.some(function(x){return x.j===r.target;});
+    var targetIdx=getMemberTargetIndex(r);
+    return swEnemies.some(function(x){return x.j===targetIdx;});
   });
 
   if(!swRows.length){
@@ -797,7 +827,7 @@ function copySwitching(targetIdx){
   swEnemies.forEach(function(x){
     if(targetIdx>=0&&x.j!==targetIdx)return;
     if(x.e.arrivalSec===undefined)return;
-    var filtered=memberRows.filter(function(r){return r.name.trim()&&r.target===x.j;});
+    var filtered=memberRows.filter(function(r){return r.name.trim()&&getMemberTargetIndex(r)===x.j;});
     var eLines=filtered.map(function(r){
       var delay=r.swDelay!==undefined?r.swDelay:10;
       return r.name+' '+fmtMS(x.e.arrivalSec+delay-r.march);
