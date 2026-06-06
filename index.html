@@ -613,7 +613,21 @@ function clearMembers(){
 
 function calcMember(){renderEnemies();renderMemberTable();renderSwTable();}
 function addEnemy(){if(enemies.length>=15)return;enemies.push(makeEnemy(enemies.length,30));calcMember();}
-function removeEnemy(i){enemies.splice(i,1);calcMember();}
+function removeEnemy(i){
+  enemies.splice(i,1);
+  memberRows.forEach(function(row){
+    if(row.target===i)row.target=Math.max(0,i-1);
+    else if(row.target>i)row.target-=1;
+  });
+  sortMemberRowsByTarget();
+  calcMember();
+}
+function sortMemberRowsByTarget(){
+  memberRows=memberRows.map(function(row,idx){return{row:row,idx:idx};}).sort(function(a,b){
+    if(a.row.target!==b.row.target)return a.row.target-b.row.target;
+    return a.idx-b.idx;
+  }).map(function(x){return x.row;});
+}
 function moveEnemy(i,dir){
   var next=i+dir;
   if(next<0||next>=enemies.length)return;
@@ -624,6 +638,7 @@ function moveEnemy(i,dir){
     if(row.target===i)row.target=next;
     else if(row.target===next)row.target=i;
   });
+  sortMemberRowsByTarget();
   calcMember();
 }
 function applyEnemyOrder(oldIndexes){
@@ -632,6 +647,7 @@ function applyEnemyOrder(oldIndexes){
   memberRows.forEach(function(row){
     if(newTargetByOld[row.target]!==undefined)row.target=newTargetByOld[row.target];
   });
+  sortMemberRowsByTarget();
 }
 function sortEnemiesByArrival(){
   var ordered=enemies.map(function(e,i){return{e:e,old:i};}).sort(function(a,b){
