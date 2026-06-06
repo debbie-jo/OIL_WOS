@@ -511,7 +511,7 @@ function renderEnemies(){
     return '<div class="enemy-row">'
       +'<div class="enemy-name-wrap"><span class="enemy-badge '+badgeClass(i)+'"><input class="enemy-name-input" value="'+e.name+'" oninput="enemies['+i+'].name=this.value;renderMemberTable();renderSwTable();renderBattleView();saveState()"></span></div>'
       +'<div class="enemy-remain"><input class="mini-input" type="number" id="remain-min-'+i+'" value="'+rMin+'" min="0" max="59" inputmode="numeric"><span class="time-unit">분</span><input class="mini-input" type="number" id="remain-sec-'+i+'" value="'+rSec+'" min="0" max="59" inputmode="numeric"><span class="time-unit">초</span><button class="now-btn" id="now-btn-'+i+'" onclick="setOpenByRemain('+i+')">적용</button></div>'
-      +'<div class="enemy-march-cell"><input class="mini-input" type="number" value="'+e.march+'" min="0" inputmode="numeric" onchange="enemies['+i+'].march=parseInt(this.value)||0;calcMember()"></div>'
+      +'<div class="enemy-march-cell"><input class="mini-input" type="number" value="'+e.march+'" min="0" inputmode="numeric" onchange="enemies['+i+'].march=parseInt(this.value)||0;recalcEnemyArrivalFromMarch('+i+')"></div>'
       +'<div class="inline-time countdown" id="enemy-rally-countdown-'+i+'">'+rallyCountdown+'</div>'
       +'<div class="inline-time countdown" id="enemy-countdown-'+i+'">'+countdown+'</div>'
       +'<div class="inline-time arrival">'+arrival+'</div>'
@@ -582,6 +582,14 @@ function setOpenByRemain(i){
   var arrSec=applyEnemyRemain(i,min*60+sec);
   var btn=document.getElementById('now-btn-'+i);
   if(btn){btn.textContent='✅ '+fmtTime(arrSec);btn.classList.add('flashed');setTimeout(function(){btn.textContent='⚡ 적용';btn.classList.remove('flashed');},2000);}
+}
+function recalcEnemyArrivalFromMarch(i){
+  if(!enemies[i]||!enemies[i].rallyEndAtMs){calcMember();return;}
+  var remainSec=Math.max(0,Math.ceil((enemies[i].rallyEndAtMs-Date.now())/1000));
+  var arrSec=((nowUTC()+remainSec+enemies[i].march)%86400+86400)%86400;
+  enemies[i].arrivalSec=arrSec;
+  enemies[i].arrivalAtMs=Date.now()+(remainSec+enemies[i].march)*1000;
+  calcMember();
 }
 function applyEnemyRemain(i,totalSec){
   if(!enemies[i])return undefined;
