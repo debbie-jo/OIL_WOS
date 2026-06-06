@@ -58,40 +58,6 @@ tr:hover td{background:#151f30;}
 .enemy-name-input{background:transparent;border:none;outline:none;font-family:inherit;font-size:inherit;font-weight:inherit;color:inherit;width:72px;cursor:text;}
 .target-select{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:4px;font-family:var(--sans);font-size:11px;color:var(--text);cursor:pointer;outline:none;width:100%;}
 .info-box{background:#0f1a2e;border:1px solid #1e3a5f;border-radius:8px;padding:10px 14px;font-size:12px;color:var(--accent2);margin-bottom:14px;line-height:1.6;}
-.rally-status{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);}
-.rally-dot{width:8px;height:8px;border-radius:50%;background:var(--warn);}
-.rally-dot.ready{background:#22c55e;}
-.rally-toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
-.rally-filter{background:transparent;border:1px solid var(--border);border-radius:7px;color:var(--muted);font-family:var(--sans);font-size:12px;font-weight:600;padding:6px 12px;cursor:pointer;}
-.rally-filter.active{background:var(--accent);border-color:var(--accent);color:white;}
-.rally-list{display:grid;gap:10px;}
-.rally-card{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px;display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;}
-.rally-card.ended{opacity:.62;}
-.rally-title{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;}
-.rally-title strong{font-size:14px;color:#dbeafe;}
-.rally-badge{font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:#0f1a2e;color:#93c5fd;border:1px solid #1e3a5f;}
-.rally-meta{display:flex;gap:8px 14px;flex-wrap:wrap;font-size:12px;color:var(--muted);line-height:1.5;}
-.rally-note{font-size:12px;color:#cbd5e1;margin-top:7px;line-height:1.5;}
-.rally-edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;}
-.rally-edit-grid label{font-size:10px;margin-bottom:3px;}
-.rally-edit-grid input{font-size:12px;padding:6px 8px;}
-.rally-small-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px;}
-.rally-small-row label{font-size:10px;margin-bottom:3px;}
-.rally-small-row input{font-size:12px;padding:6px 8px;text-align:center;}
-.rally-time{font-family:var(--mono);min-width:92px;text-align:center;border-radius:8px;padding:8px;background:#0a1f12;color:#86efac;border:1px solid #065f46;}
-.rally-time.ending{background:#1a1500;color:#fde68a;border-color:#92400e;}
-.rally-time.ended{background:#1f0a0a;color:#fca5a5;border-color:#991b1b;}
-.rally-time strong{display:block;font-size:15px;}
-.rally-time span{display:block;font-family:var(--sans);font-size:10px;margin-top:2px;color:inherit;}
-.rally-preview{margin-top:8px;border:1px solid #1e3a5f;background:#0f1a2e;border-radius:8px;padding:8px;min-width:132px;}
-.rally-preview-title{font-size:10px;font-weight:700;color:#93c5fd;margin-bottom:6px;}
-.rally-preview-line{display:flex;justify-content:space-between;gap:8px;font-size:11px;color:var(--muted);line-height:1.6;}
-.rally-preview-line strong{font-family:var(--mono);font-size:12px;color:#f8fafc;}
-.rally-preview-total{margin-top:6px;padding-top:6px;border-top:1px solid #1e3a5f;color:#fde68a;}
-.rally-preview-total strong{color:#fde68a;}
-.rally-apply{margin-top:8px;background:#1a2e1a;border:1px solid #2d5a2d;border-radius:7px;color:#4ade80;font-family:var(--sans);font-size:12px;font-weight:700;padding:6px 10px;cursor:pointer;width:100%;}
-.rally-apply:hover{border-color:#86efac;color:#86efac;}
-.rally-empty{text-align:center;padding:22px 10px;color:var(--muted);font-size:13px;border:1px dashed var(--border);border-radius:10px;}
 .pet-inline{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#1a1030;border:1px solid #3b2060;border-radius:8px;padding:8px 10px;margin-top:6px;}
 .pet-time{font-family:var(--mono);font-size:15px;font-weight:bold;color:#a78bfa;}
 .sw-tag{font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;background:#1a2e1a;color:#4ade80;border:1px solid #2d5a2d;margin-left:4px;}
@@ -117,9 +83,6 @@ tr:hover td{background:#151f30;}
 @media(max-width:480px){
   .setting-row{grid-template-columns:1fr;}
   .enemy-grid{grid-template-columns:1fr;}
-  .rally-edit-grid,.rally-small-row{grid-template-columns:1fr;}
-  .rally-card{grid-template-columns:1fr;}
-  .rally-time{width:100%;}
   table{font-size:12px;}
   .col-num{width:20px;}.col-name{width:70px;}.col-march{width:46px;}.col-delay{width:46px;}.col-target{width:56px;}.col-result{width:72px;}.col-del{width:20px;}.col-pet{width:30px;}
   body{padding:14px 10px;}
@@ -172,23 +135,6 @@ tr:hover td{background:#151f30;}
 <!-- 집결원 방어 -->
 <div class="section" id="member">
   <div class="info-box">적 집결 알림이 오면 → 남은 집결 시간 입력 후 ⚡ 적용<br>집결 끝나면 → 집결장 행군 시간 입력</div>
-
-  <div class="card">
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap;">
-      <div>
-        <div class="card-title" style="margin-bottom:4px;">집결 현황</div>
-        <div class="rally-status"><span class="rally-dot" id="rally-dot"></span><span id="rally-load-status">집결 데이터를 불러오는 중</span></div>
-      </div>
-      <div class="rally-toolbar" style="margin-bottom:0;">
-        <button class="rally-filter active" onclick="setRallyFilter('active',this)">진행중</button>
-        <button class="rally-filter" onclick="setRallyFilter('all',this)">전체</button>
-        <button class="rally-filter" onclick="loadRallies(true)">새로고침</button>
-      </div>
-    </div>
-    <div id="rally-updated" style="font-size:11px;color:var(--muted);margin-bottom:10px;">업데이트 대기중</div>
-    <div id="rally-list" class="rally-list"></div>
-    <div id="rally-empty" class="rally-empty" style="display:none;">열린 집결이 없습니다.<br>새 집결이 등록되면 이곳에 자동으로 표시됩니다.</div>
-  </div>
 
   <!-- 상대 집결장 -->
   <div class="card">
@@ -244,7 +190,7 @@ tr:hover td{background:#151f30;}
 
 <script>
 function updateClock(){var n=new Date();document.getElementById('utc-clock').textContent=[n.getUTCHours(),n.getUTCMinutes(),n.getUTCSeconds()].map(function(v){return String(v).padStart(2,'0');}).join(':');}
-setInterval(function(){updateClock();updateAllRallyPreviews();},1000);updateClock();
+setInterval(updateClock,1000);updateClock();
 
 function switchTab(tab){
   ['host','member','switching'].forEach(function(t){document.getElementById(t).classList.toggle('active',t===tab);});
@@ -258,172 +204,6 @@ function parseSecs(str){str=str.replace(/[^0-9]/g,'');if(!str)return 0;if(str.le
 function autoColon(input){var v=input.value.replace(/[^0-9]/g,'').slice(0,6);if(v.length>=5)v=v.slice(0,2)+':'+v.slice(2,4)+':'+v.slice(4);else if(v.length>=3)v=v.slice(0,2)+':'+v.slice(2);input.value=v;}
 function nowUTC(){var n=new Date();return n.getUTCHours()*3600+n.getUTCMinutes()*60+n.getUTCSeconds();}
 function copyToClipboard(text,btn){navigator.clipboard.writeText(text).then(function(){var o=btn.textContent;btn.textContent='✅ 복사됨!';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},2000);});}
-
-// 집결 현황
-var SUPABASE_REST_URL='https://zylgtevqcfexhtvuxjqf.supabase.co/rest/v1';
-var SUPABASE_ANON_KEY='sb_publishable_LwFlxOVCj79SX9zQ-kqwow__zhwn10s';
-var rallyRows=[];
-var rallyFilter='active';
-function parseRallyDate(v){if(!v)return null;var d=new Date(v);return isNaN(d.getTime())?null:d;}
-function formatRallyDate(d){if(!d)return '시간 미정';return new Intl.DateTimeFormat('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}).format(d);}
-function formatRemaining(ms){var m=Math.ceil(ms/60000);var h=Math.floor(m/60);var mm=m%60;return h>0?h+'시간 '+mm+'분':mm+'분';}
-function getRallyState(r){
-  var now=new Date(), start=parseRallyDate(r.startsAt), end=parseRallyDate(r.endsAt);
-  if(end&&end<=now)return{status:'ended',label:'종료됨',start:start,end:end};
-  var target=end||start, remain=target?Math.max(0,target-now):null;
-  return{status:remain!==null&&remain<=600000?'ending':'active',label:remain===null?'시간 미정':formatRemaining(remain),start:start,end:end};
-}
-function setRallyFilter(filter,btn){
-  rallyFilter=filter;
-  document.querySelectorAll('.rally-filter').forEach(function(b){if(b.textContent!=='새로고침')b.classList.remove('active');});
-  if(btn)btn.classList.add('active');
-  renderRallies();
-}
-function normalizeRallies(data){
-  var rows=Array.isArray(data)?data:data.rallies;
-  if(!Array.isArray(rows))return[];
-  return rows.filter(function(r){return r&&r.title;}).map(function(r,i){
-    return{id:r.id||'rally-'+i,title:r.title,target:r.target||'대상 미정',leader:r.leader||'집결장 미정',startsAt:r.startsAt||r.starts_at||null,endsAt:r.endsAt||r.ends_at||null,note:r.note||''};
-  });
-}
-function escapeRallyHtml(v){return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');}
-function escapeRallyJs(v){return String(v).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,'\\n').replace(/\r/g,'');}
-function rallyDomKey(v){return String(v).replace(/[^a-zA-Z0-9_-]/g,'_');}
-function isRallyEditing(){
-  var active=document.activeElement;
-  var list=document.getElementById('rally-list');
-  return !!(active&&list&&list.contains(active)&&(active.tagName==='INPUT'||active.tagName==='TEXTAREA'||active.tagName==='SELECT'));
-}
-function getRallyRemainSeconds(rally){
-  var end=parseRallyDate(rally.endsAt);
-  if(!end)return 0;
-  return Math.max(0,Math.ceil((end-new Date())/1000));
-}
-function findEnemyMarch(leader){
-  var found=enemies.find(function(e){return e.name===leader;});
-  return found?found.march:30;
-}
-function getRallyPreviewValues(key){
-  var minInput=document.getElementById('rally-min-'+key);
-  var secInput=document.getElementById('rally-sec-'+key);
-  var marchInput=document.getElementById('rally-march-'+key);
-  var remain=(parseInt(minInput&&minInput.value)||0)*60+(parseInt(secInput&&secInput.value)||0);
-  var march=parseInt(marchInput&&marchInput.value)||0;
-  var total=remain+march;
-  return{remain:remain,march:march,total:total,arrival:((nowUTC()+total)%86400+86400)%86400};
-}
-function renderRallyPreviewHtml(key,remain,march){
-  var total=remain+march;
-  var arrival=((nowUTC()+total)%86400+86400)%86400;
-  return '<div class="rally-preview" id="rally-preview-'+key+'">'
-    +'<div class="rally-preview-title">적 도착 계산</div>'
-    +'<div class="rally-preview-line"><span>집결 남음</span><strong data-role="remain">'+fmtDuration(remain)+'</strong></div>'
-    +'<div class="rally-preview-line"><span>행군</span><strong data-role="march">'+fmtDuration(march)+'</strong></div>'
-    +'<div class="rally-preview-line rally-preview-total"><span>도착까지</span><strong data-role="total">'+fmtDuration(total)+'</strong></div>'
-    +'<div class="rally-preview-line"><span>도착 UTC</span><strong data-role="arrival">'+fmtTime(arrival)+'</strong></div>'
-    +'</div>';
-}
-function updateRallyPreview(key){
-  var preview=document.getElementById('rally-preview-'+key);
-  if(!preview)return;
-  var values=getRallyPreviewValues(key);
-  var remainEl=preview.querySelector('[data-role="remain"]');
-  var marchEl=preview.querySelector('[data-role="march"]');
-  var totalEl=preview.querySelector('[data-role="total"]');
-  var arrivalEl=preview.querySelector('[data-role="arrival"]');
-  if(remainEl)remainEl.textContent=fmtDuration(values.remain);
-  if(marchEl)marchEl.textContent=fmtDuration(values.march);
-  if(totalEl)totalEl.textContent=fmtDuration(values.total);
-  if(arrivalEl)arrivalEl.textContent=fmtTime(values.arrival);
-}
-function updateAllRallyPreviews(){
-  document.querySelectorAll('.rally-preview').forEach(function(el){
-    updateRallyPreview(el.id.replace('rally-preview-',''));
-  });
-}
-function renderRallies(){
-  if(isRallyEditing())return;
-  var list=document.getElementById('rally-list'), empty=document.getElementById('rally-empty');
-  if(!list||!empty)return;
-  var visible=rallyRows.map(function(r){return{r:r,s:getRallyState(r)};}).filter(function(x){return rallyFilter==='all'||x.s.status!=='ended';}).sort(function(a,b){
-    var ad=a.s.end||a.s.start||new Date(8640000000000000), bd=b.s.end||b.s.start||new Date(8640000000000000);
-    return ad-bd;
-  });
-  list.innerHTML='';
-  empty.style.display=visible.length?'none':'block';
-  visible.forEach(function(x){
-    var card=document.createElement('div');
-    var timeClass=x.s.status==='ended'?'ended':(x.s.status==='ending'?'ending':'');
-    var key=rallyDomKey(x.r.id);
-    var remainSec=getRallyRemainSeconds(x.r);
-    var remainMin=Math.floor(remainSec/60);
-    var remainSecond=remainSec%60;
-    var march=findEnemyMarch(x.r.leader);
-    card.className='rally-card '+(x.s.status==='ended'?'ended':'');
-    card.innerHTML='<div><div class="rally-title"><strong>'+escapeRallyHtml(x.r.title)+'</strong><span class="rally-badge">'+escapeRallyHtml(x.r.target)+'</span></div>'
-      +'<div class="rally-meta"><span>시작 '+formatRallyDate(x.s.start)+'</span><span>종료 '+formatRallyDate(x.s.end)+'</span><span>집결장 '+escapeRallyHtml(x.r.leader)+'</span></div>'
-      +(x.r.note?'<div class="rally-note">'+escapeRallyHtml(x.r.note)+'</div>':'')
-      +'<div class="rally-edit-grid">'
-      +'<div><label>집결장 이름</label><input id="rally-leader-'+key+'" type="text" value="'+escapeRallyHtml(x.r.leader)+'"></div>'
-      +'<div><label>목표</label><input id="rally-target-'+key+'" type="text" value="'+escapeRallyHtml(x.r.target)+'"></div>'
-      +'</div>'
-      +'<div class="rally-small-row">'
-      +'<div><label>남은 분</label><input id="rally-min-'+key+'" type="number" min="0" value="'+remainMin+'" oninput="updateRallyPreview(\''+key+'\')"></div>'
-      +'<div><label>남은 초</label><input id="rally-sec-'+key+'" type="number" min="0" max="59" value="'+remainSecond+'" oninput="updateRallyPreview(\''+key+'\')"></div>'
-      +'<div><label>행군 초</label><input id="rally-march-'+key+'" type="number" min="0" value="'+march+'" oninput="updateRallyPreview(\''+key+'\')"></div>'
-      +'</div></div>'
-      +'<div><div class="rally-time '+timeClass+'"><strong>'+x.s.label+'</strong><span>'+(x.s.status==='ended'?'만료':'남음')+'</span></div>'
-      +renderRallyPreviewHtml(key,remainSec,march)
-      +(x.s.status==='ended'?'':'<button class="rally-apply" onclick="applyRallyToDefense(\''+escapeRallyJs(x.r.id)+'\')">방어 적용</button>')+'</div>';
-    list.appendChild(card);
-  });
-}
-function applyRallyToDefense(rallyId){
-  var rally=rallyRows.find(function(r){return r.id===rallyId;});
-  if(!rally)return alert('집결 정보를 찾지 못했습니다.');
-  var key=rallyDomKey(rally.id);
-  var leaderInput=document.getElementById('rally-leader-'+key);
-  var targetInput=document.getElementById('rally-target-'+key);
-  var values=getRallyPreviewValues(key);
-  var remain=values.remain;
-  if(remain<=0)return alert('이미 종료된 집결입니다.');
-  var leader=(leaderInput&&leaderInput.value.trim())||rally.leader||'집결장'+(enemies.length+1);
-  var march=values.march||30;
-  var idx=enemies.findIndex(function(e){return e.name===leader;});
-  if(idx<0)idx=enemies.findIndex(function(e){return e.arrivalSec===undefined;});
-  if(idx<0){
-    if(enemies.length>=15)return alert('상대 집결장은 최대 15개까지 가능합니다.');
-    enemies.push({name:leader,march:30,arrivalSec:undefined,remainMin:4,remainSec:30,petOn:false,petStart:'',isSwitching:false});
-    idx=enemies.length-1;
-  }
-  enemies[idx].name=leader;
-  enemies[idx].march=march;
-  var arrSec=applyEnemyRemain(idx,remain);
-  alert(leader+'을(를) 상대 집결장 '+(idx+1)+'번에 적용했습니다.\n목표: '+((targetInput&&targetInput.value.trim())||rally.target||'대상 미정')+'\n집결 남음 '+fmtDuration(remain)+' + 행군 '+fmtDuration(march)+'\n도착까지 '+fmtDuration(remain+march)+' / 적 도착 UTC '+fmtTime(arrSec));
-}
-function loadRallies(force){
-  if(!force&&isRallyEditing())return;
-  var status=document.getElementById('rally-load-status'), dot=document.getElementById('rally-dot'), updated=document.getElementById('rally-updated');
-  if(status)status.textContent='집결 데이터를 불러오는 중';
-  if(dot)dot.classList.remove('ready');
-  fetch(SUPABASE_REST_URL+'/rallies?select=id,title,target,leader,starts_at,ends_at,source,note,updated_at&order=ends_at.asc&t='+Date.now(),{
-    headers:{apikey:SUPABASE_ANON_KEY,Authorization:'Bearer '+SUPABASE_ANON_KEY}
-  }).then(function(res){if(!res.ok)throw new Error(res.status);return res.json();}).catch(function(){
-    return fetch('rallies.json?t='+Date.now()).then(function(res){if(!res.ok)throw new Error(res.status);return res.json();});
-  }).then(function(data){
-    rallyRows=normalizeRallies(data);
-    if(status)status.textContent='집결 데이터 연결됨';
-    if(dot)dot.classList.add('ready');
-    if(updated)updated.textContent='마지막 업데이트 '+formatRallyDate(new Date());
-    renderRallies();
-  }).catch(function(){
-    rallyRows=[];
-    if(status)status.textContent='집결 데이터를 불러오지 못했습니다';
-    if(dot)dot.classList.remove('ready');
-    if(updated)updated.textContent='업데이트 실패';
-    renderRallies();
-  });
-}
 
 // 펫 타이머
 var petTimers={};
@@ -727,8 +507,6 @@ renderHost();
 renderEnemies();
 renderMemberTable();
 renderSwTable();
-loadRallies(true);
-setInterval(function(){loadRallies(false);},5000);
 </script>
 </body>
 </html>
