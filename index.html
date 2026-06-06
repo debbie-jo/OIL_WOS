@@ -479,10 +479,6 @@ function ensureEnemyIds(){
 }
 function getMemberTargetIndex(row){
   ensureEnemyIds();
-  if(row.targetId){
-    var idx=enemies.findIndex(function(e){return e.id===row.targetId;});
-    if(idx>=0)return idx;
-  }
   var fallback=Math.min(Math.max(parseInt(row.target)||0,0),Math.max(enemies.length-1,0));
   row.target=fallback;
   row.targetId=enemies[fallback]?enemies[fallback].id:undefined;
@@ -494,7 +490,7 @@ function setMemberTarget(row,target){
   row.targetId=enemies[target]?enemies[target].id:undefined;
 }
 function syncMemberTargetIndexes(){
-  memberRows.forEach(function(row){setMemberTarget(row,getMemberTargetIndex(row));});
+  memberRows.forEach(function(row){setMemberTarget(row,row.target);});
 }
 
 function renderEnemies(){
@@ -677,11 +673,9 @@ function clearMembers(){
 function calcMember(){renderEnemies();renderMemberTable();renderSwTable();}
 function addEnemy(){if(enemies.length>=15)return;enemies.push(makeEnemy(enemies.length,30));calcMember();}
 function removeEnemy(i){
-  var removedId=enemies[i]?enemies[i].id:undefined;
   enemies.splice(i,1);
   memberRows.forEach(function(row){
-    if(row.targetId===removedId)setMemberTarget(row,Math.max(0,i-1));
-    else setMemberTarget(row,getMemberTargetIndex(row));
+    setMemberTarget(row,row.target);
   });
   sortMemberRowsByTarget();
   calcMember();
