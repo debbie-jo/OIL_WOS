@@ -61,6 +61,36 @@ tr:hover td{background:#151f30;}
 .enemy-value.arrival{color:#fca5a5;background:#1f0a0a;border-color:#991b1b;letter-spacing:2px;}
 .danger-btn{background:#1f0a0a;border:1px solid #991b1b;border-radius:7px;color:#f87171;font-family:var(--sans);font-size:12px;font-weight:700;padding:5px 12px;cursor:pointer;white-space:nowrap;}
 .danger-btn:hover{border-color:#fca5a5;color:#fca5a5;}
+.mode-tabs{display:flex;gap:6px;margin-bottom:12px;background:#0f172a;border:1px solid var(--border);border-radius:9px;padding:4px;}
+.mode-btn{flex:1;border:none;border-radius:7px;background:transparent;color:var(--muted);font-family:var(--sans);font-size:13px;font-weight:700;padding:8px;cursor:pointer;}
+.mode-btn.active{background:var(--accent);color:white;}
+.member-mode{display:none;}
+.member-mode.active{display:block;}
+.enemy-list-compact{display:grid;gap:8px;}
+.enemy-row{display:grid;grid-template-columns:minmax(90px,1fr) 174px 82px minmax(96px,110px) minmax(96px,112px) 104px 32px;gap:8px;align-items:center;background:#141c2d;border:1px solid var(--border);border-radius:9px;padding:9px;}
+.enemy-row-head{background:#182235;color:#cbd5e1;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:7px 9px;}
+.enemy-name-wrap{display:flex;align-items:center;gap:6px;min-width:0;}
+.enemy-name-wrap .enemy-badge{min-width:78px;text-align:center;}
+.enemy-remain{display:flex;align-items:center;gap:5px;justify-content:center;}
+.mini-input{width:46px;padding:6px;background:var(--bg3);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:var(--mono);font-size:13px;text-align:center;outline:none;}
+.enemy-option{display:flex;align-items:center;justify-content:center;gap:5px;font-size:11px;color:var(--muted);white-space:nowrap;}
+.enemy-option input{width:13px;height:13px;cursor:pointer;}
+.inline-time{font-family:var(--mono);font-size:14px;font-weight:700;border-radius:7px;padding:6px 8px;text-align:center;white-space:nowrap;}
+.inline-time.countdown{background:#1a1500;color:#fde68a;border:1px solid #92400e;}
+.inline-time.arrival{background:#1f0a0a;color:#fca5a5;border:1px solid #991b1b;}
+.battle-grid{display:grid;grid-template-columns:minmax(260px,34%) 1fr;gap:12px;align-items:start;}
+.battle-panel{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px;}
+.battle-enemy-list,.battle-member-groups{display:grid;gap:8px;}
+.battle-enemy{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;background:#141c2d;border:1px solid var(--border);border-radius:8px;padding:8px;}
+.battle-enemy strong{font-size:13px;color:#dbeafe;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.battle-group{border:1px solid var(--border);border-radius:9px;overflow:hidden;background:#111827;}
+.battle-group-head{display:flex;align-items:center;justify-content:space-between;gap:8px;background:#182235;padding:8px 10px;}
+.battle-group-title{display:flex;align-items:center;gap:8px;min-width:0;font-size:13px;font-weight:700;color:#dbeafe;}
+.battle-member-row{display:grid;grid-template-columns:minmax(80px,1fr) 82px 98px;gap:8px;align-items:center;padding:8px 10px;border-top:1px solid #1a2235;font-size:13px;}
+.battle-member-row .name{color:#bfdbfe;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.battle-member-row .depart{font-family:var(--mono);font-weight:700;text-align:center;}
+.battle-member-row .arrive{font-family:var(--mono);font-weight:700;text-align:center;color:#fde68a;}
+.bulk-body.collapsed{display:none;}
 .target-select{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:4px;font-family:var(--sans);font-size:11px;color:var(--text);cursor:pointer;outline:none;width:100%;}
 .info-box{background:#0f1a2e;border:1px solid #1e3a5f;border-radius:8px;padding:10px 14px;font-size:12px;color:var(--accent2);margin-bottom:14px;line-height:1.6;}
 .pet-inline{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#1a1030;border:1px solid #3b2060;border-radius:8px;padding:8px 10px;margin-top:6px;}
@@ -88,6 +118,9 @@ tr:hover td{background:#151f30;}
 @media(max-width:480px){
   .setting-row{grid-template-columns:1fr;}
   .enemy-grid{grid-template-columns:1fr;}
+  .enemy-row,.enemy-row-head{grid-template-columns:1fr;}
+  .battle-grid{grid-template-columns:1fr;}
+  .battle-member-row{grid-template-columns:minmax(70px,1fr) 72px 88px;}
   table{font-size:12px;}
   .col-num{width:20px;}.col-name{width:70px;}.col-march{width:46px;}.col-delay{width:46px;}.col-target{width:56px;}.col-result{width:72px;}.col-del{width:20px;}.col-pet{width:30px;}
   body{padding:14px 10px;}
@@ -141,43 +174,74 @@ tr:hover td{background:#151f30;}
 <div class="section" id="member">
   <div class="info-box">적 집결 알림이 오면 → 남은 집결 시간 입력 후 ⚡ 적용<br>적용 후에는 도착까지 남은 시간이 카운트됩니다</div>
 
-  <!-- 상대 집결장 -->
-  <div class="card">
-    <div class="section-sub">상대 집결장 정보</div>
-    <div id="enemy-list"></div>
-    <button class="add-btn" onclick="addEnemy()">+ 상대 집결장 추가</button>
+  <div class="mode-tabs">
+    <button class="mode-btn active" onclick="setMemberMode('input',this)">입력 모드</button>
+    <button class="mode-btn" onclick="setMemberMode('battle',this)">전투 보기</button>
   </div>
 
-  <!-- 일괄 입력 -->
-  <div class="card">
-    <div class="card-title">유저 일괄 입력</div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">형식: 닉네임 행군시간 담당집결장번호(쉼표구분)<br>예) 홍길동 30 1 / 김철수 32 1,3</div>
-    <textarea id="bulk-input" placeholder="홍길동 30 1&#10;김철수 32 1,3&#10;이영희 35 2"></textarea>
-    <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
-      <button class="action-btn" onclick="applyBulkInput()">✅ 일괄 적용</button>
-      <button class="action-btn" onclick="clearMembers()" style="color:#f87171;border-color:#991b1b;background:#1f0a0a;">🗑 전체 초기화</button>
-      <button class="action-btn" onclick="clearSavedState()">저장값 초기화</button>
+  <div class="member-mode active" id="member-mode-input">
+    <!-- 상대 집결장 -->
+    <div class="card">
+      <div class="section-sub">상대 집결장 정보</div>
+      <div id="enemy-list"></div>
+      <button class="add-btn" onclick="addEnemy()">+ 상대 집결장 추가</button>
     </div>
-  </div>
 
-  <!-- 내 유저 -->
-  <div class="card">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-      <div class="section-sub" style="margin-bottom:0;">내 유저 출발 시간</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button class="danger-btn" onclick="clearMembers()">수비원 전체 삭제</button>
-        <button class="copy-btn" onclick="copyAllMembers(-1)" id="copy-all-btn">📋 전체 복사</button>
+    <!-- 일괄 입력 -->
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;">
+        <div class="card-title" style="margin-bottom:0;">유저 일괄 입력</div>
+        <button class="action-btn" onclick="toggleBulkInput()" id="bulk-toggle-btn">펼치기</button>
+      </div>
+      <div class="bulk-body collapsed" id="bulk-body">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">형식: 닉네임 행군시간 담당집결장번호(쉼표구분)<br>예) 홍길동 30 1 / 김철수 32 1,3</div>
+        <textarea id="bulk-input" placeholder="홍길동 30 1&#10;김철수 32 1,3&#10;이영희 35 2"></textarea>
+        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+          <button class="action-btn" onclick="applyBulkInput()">✅ 일괄 적용</button>
+          <button class="action-btn" onclick="clearMembers()" style="color:#f87171;border-color:#991b1b;background:#1f0a0a;">🗑 전체 초기화</button>
+          <button class="action-btn" onclick="clearSavedState()">저장값 초기화</button>
+        </div>
       </div>
     </div>
-    <div id="member-copy-btns" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;"></div>
-    <div class="table-wrap">
-      <table>
-        <colgroup><col class="col-num"><col class="col-name"><col class="col-march"><col class="col-target"><col class="col-result"><col class="col-del"></colgroup>
-        <thead><tr><th>#</th><th style="text-align:left;padding-left:6px;">닉네임</th><th>행군(초)</th><th>타겟</th><th>출발 시간</th><th></th></tr></thead>
-        <tbody id="member-tbody"></tbody>
-      </table>
+
+    <!-- 내 유저 -->
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <div class="section-sub" style="margin-bottom:0;">내 유저 출발 시간</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="danger-btn" onclick="clearMembers()">수비원 전체 삭제</button>
+          <button class="copy-btn" onclick="copyAllMembers(-1,this)" id="copy-all-btn">📋 전체 복사</button>
+        </div>
+      </div>
+      <div id="member-copy-btns" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;"></div>
+      <div class="table-wrap">
+        <table>
+          <colgroup><col class="col-num"><col class="col-name"><col class="col-march"><col class="col-target"><col class="col-result"><col class="col-del"></colgroup>
+          <thead><tr><th>#</th><th style="text-align:left;padding-left:6px;">닉네임</th><th>행군(초)</th><th>타겟</th><th>출발 시간</th><th></th></tr></thead>
+          <tbody id="member-tbody"></tbody>
+        </table>
+      </div>
+      <button class="add-btn" onclick="addMemberRow()">+ 유저 추가</button>
     </div>
-    <button class="add-btn" onclick="addMemberRow()">+ 유저 추가</button>
+  </div>
+
+  <div class="member-mode" id="member-mode-battle">
+    <div class="battle-grid">
+      <div class="battle-panel">
+        <div class="section-sub">상대 집결장</div>
+        <div id="battle-enemies" class="battle-enemy-list"></div>
+      </div>
+      <div class="battle-panel">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;">
+          <div class="section-sub" style="margin-bottom:0;">수비원 전투 보기</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="danger-btn" onclick="clearMembers()">수비원 전체 삭제</button>
+            <button class="copy-btn" onclick="copyAllMembers(-1,this)" id="battle-copy-all-btn">📋 전체 복사</button>
+          </div>
+        </div>
+        <div id="battle-members" class="battle-member-groups"></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -214,6 +278,24 @@ function parseSecs(str){str=str.replace(/[^0-9]/g,'');if(!str)return 0;if(str.le
 function autoColon(input){var v=input.value.replace(/[^0-9]/g,'').slice(0,6);if(v.length>=5)v=v.slice(0,2)+':'+v.slice(2,4)+':'+v.slice(4);else if(v.length>=3)v=v.slice(0,2)+':'+v.slice(2);input.value=v;}
 function nowUTC(){var n=new Date();return n.getUTCHours()*3600+n.getUTCMinutes()*60+n.getUTCSeconds();}
 function copyToClipboard(text,btn){navigator.clipboard.writeText(text).then(function(){var o=btn.textContent;btn.textContent='✅ 복사됨!';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},2000);});}
+function badgeClass(i){return 'badge-'+(i%15);}
+function colorClass(i){return 'col-'+(i%15);}
+
+function setMemberMode(mode,btn){
+  document.getElementById('member-mode-input').classList.toggle('active',mode==='input');
+  document.getElementById('member-mode-battle').classList.toggle('active',mode==='battle');
+  document.querySelectorAll('.mode-btn').forEach(function(b){b.classList.remove('active');});
+  if(btn)btn.classList.add('active');
+  if(mode==='battle')renderBattleView();
+}
+
+function toggleBulkInput(){
+  var body=document.getElementById('bulk-body');
+  var btn=document.getElementById('bulk-toggle-btn');
+  if(!body||!btn)return;
+  var collapsed=body.classList.toggle('collapsed');
+  btn.textContent=collapsed?'펼치기':'접기';
+}
 
 var STORAGE_KEY='oil-wos-state-v1';
 var isRestoring=false;
@@ -326,52 +408,29 @@ var enemies=[
 ];
 
 function renderEnemies(){
-  document.getElementById('enemy-list').innerHTML=enemies.map(function(e,i){
+  var list=document.getElementById('enemy-list');
+  if(!list)return;
+  list.innerHTML='<div class="enemy-list-compact">'
+    +'<div class="enemy-row enemy-row-head"><span>집결장</span><span>남은 집결</span><span>행군</span><span>도착까지</span><span>도착 UTC</span><span>옵션</span><span></span></div>'
+    +enemies.map(function(e,i){
     var arrival=e.arrivalSec!==undefined?fmtTime(e.arrivalSec):'—';
     var countdown=e.arrivalAtMs?fmtCountdownMs(e.arrivalAtMs-Date.now()):'—';
     var rMin=e.remainMin!==undefined?e.remainMin:4;
     var rSec=e.remainSec!==undefined?e.remainSec:30;
-    return '<div class="enemy-card">'
-      +'<div class="enemy-header">'
-      +'<span class="enemy-badge badge-'+i+'"><input class="enemy-name-input" value="'+e.name+'" oninput="enemies['+i+'].name=this.value;renderMemberTable();renderSwTable();saveState()"></span>'
-      +(e.isSwitching?'<span class="sw-tag">스위칭</span>':'')
-      +'<button class="del-btn" onclick="removeEnemy('+i+')" style="margin-left:auto;">×</button>'
-      +'</div>'
-      +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;flex-wrap:wrap;">'
-      +'<span style="font-size:12px;color:var(--muted);white-space:nowrap;">남은 시간</span>'
-      +'<input type="number" id="remain-min-'+i+'" value="'+rMin+'" min="0" max="59" inputmode="numeric" style="width:50px;padding:5px 6px;font-family:var(--mono);font-size:13px;background:#1a2235;border:1px solid #2a3a55;border-radius:6px;color:#f8fafc;text-align:center;outline:none;">'
-      +'<span style="font-size:12px;color:var(--muted);">분</span>'
-      +'<input type="number" id="remain-sec-'+i+'" value="'+rSec+'" min="0" max="59" inputmode="numeric" style="width:50px;padding:5px 6px;font-family:var(--mono);font-size:13px;background:#1a2235;border:1px solid #2a3a55;border-radius:6px;color:#f8fafc;text-align:center;outline:none;">'
-      +'<span style="font-size:12px;color:var(--muted);">초</span>'
-      +'<button class="now-btn" id="now-btn-'+i+'" onclick="setOpenByRemain('+i+')" style="padding:5px 12px;font-size:12px;">⚡ 적용</button>'
-      +'</div>'
-      +'<div class="enemy-grid">'
-      +'<div><label>집결장 행군 시간 (초)</label><input type="number" value="'+e.march+'" min="0" inputmode="numeric" style="font-family:var(--mono);font-size:15px;width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:#f8fafc;outline:none;" onchange="enemies['+i+'].march=parseInt(this.value)||0;calcMember()"></div>'
-      +'<div><label>도착까지 남은 시간</label><div class="enemy-value countdown" id="enemy-countdown-'+i+'">'+countdown+'</div></div>'
-      +'<div><label>적 도착 시간 (UTC)</label><div class="enemy-value arrival">'+arrival+'</div></div>'
-      +'</div>'
-      +'<div style="display:flex;gap:16px;margin-top:10px;flex-wrap:wrap;">'
-      +'<div style="display:flex;align-items:center;gap:8px;">'
-      +'<input type="checkbox" id="pet-check-enemy'+i+'" '+(e.petOn?'checked':'')+' onchange="enemies['+i+'].petOn=this.checked;calcMember()" style="cursor:pointer;width:14px;height:14px;">'
-      +'<label for="pet-check-enemy'+i+'" style="font-size:12px;color:#a78bfa;cursor:pointer;margin:0;">🐾 펫 스킬 (120분)</label>'
-      +'</div>'
-      +'<div style="display:flex;align-items:center;gap:8px;">'
-      +'<input type="checkbox" id="sw-check-'+i+'" '+(e.isSwitching?'checked':'')+' onchange="enemies['+i+'].isSwitching=this.checked;renderEnemies();renderSwTable()" style="cursor:pointer;width:14px;height:14px;">'
-      +'<label for="sw-check-'+i+'" style="font-size:12px;color:#4ade80;cursor:pointer;margin:0;">⚔ 스위칭 집결장</label>'
-      +'</div>'
-      +'</div>'
-      +(e.petOn
-        ?'<div class="pet-inline" style="margin-top:6px;">'
-          +'<span style="font-size:11px;color:#a78bfa;">시작(UTC)</span>'
-          +'<input type="text" id="pet-start-enemy'+i+'" value="'+(e.petStart||'')+'" placeholder="03:00:00" inputmode="numeric" oninput="autoColon(this);enemies['+i+'].petStart=this.value;updatePetRow(\'enemy'+i+'\')" style="width:90px;padding:4px 6px;font-size:12px;letter-spacing:1px;background:#1a1030;border:1px solid #3b2060;border-radius:6px;color:#f8fafc;font-family:var(--mono);">'
-          +'<span style="font-size:11px;color:#a78bfa;">남은</span>'
-          +'<span class="pet-time" id="pet-time-enemy'+i+'">--:--</span>'
-          +'</div>'
-        :'')
+    return '<div class="enemy-row">'
+      +'<div class="enemy-name-wrap"><span class="enemy-badge '+badgeClass(i)+'"><input class="enemy-name-input" value="'+e.name+'" oninput="enemies['+i+'].name=this.value;renderMemberTable();renderSwTable();renderBattleView();saveState()"></span>'+(e.isSwitching?'<span class="sw-tag">스위칭</span>':'')+'</div>'
+      +'<div class="enemy-remain"><input class="mini-input" type="number" id="remain-min-'+i+'" value="'+rMin+'" min="0" max="59" inputmode="numeric"><span>분</span><input class="mini-input" type="number" id="remain-sec-'+i+'" value="'+rSec+'" min="0" max="59" inputmode="numeric"><span>초</span><button class="now-btn" id="now-btn-'+i+'" onclick="setOpenByRemain('+i+')" style="padding:6px 9px;font-size:11px;">적용</button></div>'
+      +'<div><input class="mini-input" type="number" value="'+e.march+'" min="0" inputmode="numeric" onchange="enemies['+i+'].march=parseInt(this.value)||0;calcMember()"></div>'
+      +'<div class="inline-time countdown" id="enemy-countdown-'+i+'">'+countdown+'</div>'
+      +'<div class="inline-time arrival">'+arrival+'</div>'
+      +'<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;"><label class="enemy-option"><input type="checkbox" id="pet-check-enemy'+i+'" '+(e.petOn?'checked':'')+' onchange="enemies['+i+'].petOn=this.checked;calcMember()">펫</label><label class="enemy-option"><input type="checkbox" id="sw-check-'+i+'" '+(e.isSwitching?'checked':'')+' onchange="enemies['+i+'].isSwitching=this.checked;renderEnemies();renderSwTable();renderBattleView()">스위칭</label></div>'
+      +'<button class="del-btn" onclick="removeEnemy('+i+')">×</button>'
+      +(e.petOn?'<div style="grid-column:1/-1;"><div class="pet-inline" style="margin-top:2px;"><span style="font-size:11px;color:#a78bfa;">펫 시작(UTC)</span><input type="text" id="pet-start-enemy'+i+'" value="'+(e.petStart||'')+'" placeholder="03:00:00" inputmode="numeric" oninput="autoColon(this);enemies['+i+'].petStart=this.value;updatePetRow(\'enemy'+i+'\');saveState()" style="width:90px;padding:4px 6px;font-size:12px;letter-spacing:1px;background:#1a1030;border:1px solid #3b2060;border-radius:6px;color:#f8fafc;font-family:var(--mono);"><span style="font-size:11px;color:#a78bfa;">남은</span><span class="pet-time" id="pet-time-enemy'+i+'">--:--</span></div></div>':'')
       +'</div>';
-  }).join('');
+  }).join('')+'</div>';
   enemies.forEach(function(e,i){if(e.petOn&&e.petStart&&e.petStart.length>=8)updatePetRow('enemy'+i);});
   updateEnemyCountdowns();
+  renderBattleView();
   saveState();
 }
 
@@ -381,6 +440,42 @@ function updateEnemyCountdowns(){
     if(!el)return;
     el.textContent=e.arrivalAtMs?fmtCountdownMs(e.arrivalAtMs-Date.now()):'—';
   });
+  updateBattleCountdowns();
+}
+
+function updateBattleCountdowns(){
+  enemies.forEach(function(e,i){
+    var el=document.getElementById('battle-enemy-countdown-'+i);
+    if(el)el.textContent=e.arrivalAtMs?fmtCountdownMs(e.arrivalAtMs-Date.now()):'—';
+  });
+  memberRows.forEach(function(row,i){
+    var e=enemies[row.target];
+    var el=document.getElementById('battle-member-arrive-'+i);
+    if(el)el.textContent=e&&e.arrivalAtMs?fmtCountdownMs(e.arrivalAtMs-Date.now()):'—';
+  });
+}
+
+function renderBattleView(){
+  var enemyWrap=document.getElementById('battle-enemies');
+  var memberWrap=document.getElementById('battle-members');
+  if(enemyWrap){
+    enemyWrap.innerHTML=enemies.length?enemies.map(function(e,i){
+      return '<div class="battle-enemy"><span class="enemy-badge '+badgeClass(i)+'">'+(i+1)+'</span><strong>'+e.name+'</strong><span class="inline-time countdown" id="battle-enemy-countdown-'+i+'">'+(e.arrivalAtMs?fmtCountdownMs(e.arrivalAtMs-Date.now()):'—')+'</span></div>';
+    }).join(''):'<div style="color:var(--muted);font-size:13px;text-align:center;padding:18px;">상대 집결장이 없습니다</div>';
+  }
+  if(memberWrap){
+    var groups=enemies.map(function(e,j){
+      var rows=memberRows.map(function(r,idx){return{r:r,idx:idx};}).filter(function(x){return x.r.target===j&&x.r.name.trim();});
+      if(!rows.length)return '';
+      var rowHtml=rows.map(function(x){
+        var depart=e.arrivalSec!==undefined?fmtMS(e.arrivalSec-x.r.march):'—';
+        var arrive=e.arrivalAtMs?fmtCountdownMs(e.arrivalAtMs-Date.now()):'—';
+        return '<div class="battle-member-row"><span class="name">'+x.r.name+'</span><span class="depart '+colorClass(j)+'">'+depart+'</span><span class="arrive" id="battle-member-arrive-'+x.idx+'">'+arrive+'</span></div>';
+      }).join('');
+      return '<div class="battle-group"><div class="battle-group-head"><div class="battle-group-title"><span class="enemy-badge '+badgeClass(j)+'">'+e.name+'</span><span class="inline-time countdown" style="padding:3px 7px;">'+(e.arrivalAtMs?fmtCountdownMs(e.arrivalAtMs-Date.now()):'—')+'</span></div><button class="copy-btn '+colorClass(j)+'" onclick="copyAllMembers('+j+',this)" style="font-size:11px;padding:4px 10px;">📋 복사</button></div>'+rowHtml+'</div>';
+    }).filter(Boolean).join('');
+    memberWrap.innerHTML=groups||'<div style="color:var(--muted);font-size:13px;text-align:center;padding:18px;">수비원 목록이 없습니다</div>';
+  }
 }
 
 function setOpenByRemain(i){
@@ -412,14 +507,14 @@ function renderMemberTable(){
   var memberCopyBtns=document.getElementById('member-copy-btns');
   if(memberCopyBtns){
     memberCopyBtns.innerHTML=enemies.map(function(e,j){
-      return '<button class="copy-btn" onclick="copyAllMembers('+j+')" style="font-size:11px;padding:4px 10px;">📋 '+e.name+' 복사</button>';
+      return '<button class="copy-btn '+colorClass(j)+'" onclick="copyAllMembers('+j+',this)" style="font-size:11px;padding:4px 10px;">📋 '+e.name+' 복사</button>';
     }).join('');
   }
   document.getElementById('member-tbody').innerHTML=memberRows.map(function(row,i){
     var opts=enemies.map(function(e,j){return'<option value="'+j+'" '+(row.target===j?'selected':'')+'>'+e.name+'</option>';}).join('');
     var e=enemies[row.target];
     var dep='—',colClass='';
-    if(e&&e.arrivalSec!==undefined){dep=fmtMS(e.arrivalSec-row.march);colClass='col-'+row.target;}
+    if(e&&e.arrivalSec!==undefined){dep=fmtMS(e.arrivalSec-row.march);colClass=colorClass(row.target);}
     return '<tr><td class="num-cell">'+(i+1)+'</td>'
       +'<td><input class="name-input" value="'+row.name+'" placeholder="닉네임" oninput="memberRows['+i+'].name=this.value;renderSwTable();saveState()"></td>'
       +'<td><input class="march-input" type="number" value="'+row.march+'" min="0" inputmode="numeric" onchange="memberRows['+i+'].march=parseInt(this.value)||0;renderMemberTable();renderSwTable()"></td>'
@@ -427,6 +522,7 @@ function renderMemberTable(){
       +'<td><span class="result-utc '+colClass+'">'+dep+'</span></td>'
       +'<td><button class="del-btn" onclick="removeMemberRow('+i+')">×</button></td></tr>';
   }).join('');
+  renderBattleView();
   saveState();
 }
 
@@ -468,7 +564,7 @@ function removeEnemy(i){enemies.splice(i,1);calcMember();}
 function addMemberRow(){memberRows.push({name:'',march:30,target:0,swDelay:10});renderMemberTable();}
 function removeMemberRow(i){memberRows.splice(i,1);renderMemberTable();renderSwTable();}
 
-function copyAllMembers(targetIdx){
+function copyAllMembers(targetIdx,btnOverride){
   var lines=memberRows.filter(function(r){
     return r.name.trim()&&(targetIdx<0||r.target===targetIdx);
   }).map(function(r){
@@ -476,9 +572,9 @@ function copyAllMembers(targetIdx){
     return r.name+' '+fmtMS(e.arrivalSec-r.march);
   }).filter(Boolean);
   if(!lines.length)return alert('닉네임과 ⚡ 적용을 먼저 해주세요!');
-  var btn=targetIdx>=0
+  var btn=btnOverride||(targetIdx>=0
     ? document.querySelectorAll('#member-copy-btns button')[targetIdx]
-    : document.getElementById('copy-all-btn');
+    : (document.getElementById('copy-all-btn')||document.getElementById('battle-copy-all-btn')));
   if(btn)copyToClipboard(lines.join('\n'),btn);
 }
 
@@ -500,6 +596,7 @@ function renderSwTable(){
 
   if(!swEnemies.length){
     wrap.innerHTML='<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">상대 집결장에서 ⚔ 스위칭 집결장을 체크해주세요</div>';
+    saveState();
     return;
   }
 
@@ -510,6 +607,7 @@ function renderSwTable(){
 
   if(!swRows.length){
     wrap.innerHTML='<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">스위칭 집결장 담당 유저가 없어요</div>';
+    saveState();
     return;
   }
 
@@ -527,7 +625,7 @@ function renderSwTable(){
     var cols='';
     swEnemies.forEach(function(x){
       var dep='—',colClass='';
-      if(x.e.arrivalSec!==undefined){dep=fmtMS(x.e.arrivalSec+delay-row.march);colClass='col-'+x.j;}
+      if(x.e.arrivalSec!==undefined){dep=fmtMS(x.e.arrivalSec+delay-row.march);colClass=colorClass(x.j);}
       cols+='<td><span class="result-utc '+colClass+'">'+dep+'</span></td>';
     });
     return '<tr>'
