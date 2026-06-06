@@ -113,11 +113,11 @@ tr:hover td{background:#151f30;}
     <div class="setting-row">
       <div>
         <label>목표 도착 시간 (UTC)</label>
-        <input type="text" id="h-target-utc" placeholder="03:00:00" value="03:00:00" inputmode="numeric" oninput="autoColon(this);renderHost()" style="font-size:16px;letter-spacing:2px;">
+        <input type="text" id="h-target-utc" placeholder="03:00:00" value="03:00:00" inputmode="numeric" oninput="autoColon(this);renderHost();saveState()" style="font-size:16px;letter-spacing:2px;">
       </div>
       <div>
         <label>집결 시간 (분)</label>
-        <input type="number" id="h-rally" value="5" min="1" max="60" onchange="renderHost()">
+        <input type="number" id="h-rally" value="5" min="1" max="60" onchange="renderHost();saveState()">
       </div>
     </div>
   </div>
@@ -156,6 +156,7 @@ tr:hover td{background:#151f30;}
     <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
       <button class="action-btn" onclick="applyBulkInput()">✅ 일괄 적용</button>
       <button class="action-btn" onclick="clearMembers()" style="color:#f87171;border-color:#991b1b;background:#1f0a0a;">🗑 전체 초기화</button>
+      <button class="action-btn" onclick="clearSavedState()">저장값 초기화</button>
     </div>
   </div>
 
@@ -214,6 +215,43 @@ function autoColon(input){var v=input.value.replace(/[^0-9]/g,'').slice(0,6);if(
 function nowUTC(){var n=new Date();return n.getUTCHours()*3600+n.getUTCMinutes()*60+n.getUTCSeconds();}
 function copyToClipboard(text,btn){navigator.clipboard.writeText(text).then(function(){var o=btn.textContent;btn.textContent='✅ 복사됨!';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},2000);});}
 
+var STORAGE_KEY='oil-wos-state-v1';
+var isRestoring=false;
+function saveState(){
+  if(isRestoring)return;
+  try{
+    localStorage.setItem(STORAGE_KEY,JSON.stringify({
+      hostTargetUtc:document.getElementById('h-target-utc')?document.getElementById('h-target-utc').value:'03:00:00',
+      hostRally:document.getElementById('h-rally')?document.getElementById('h-rally').value:'5',
+      hostRows:hostRows,
+      enemies:enemies,
+      memberRows:memberRows
+    }));
+  }catch(e){}
+}
+function restoreState(){
+  try{
+    var raw=localStorage.getItem(STORAGE_KEY);
+    if(!raw)return;
+    var data=JSON.parse(raw);
+    isRestoring=true;
+    if(data.hostTargetUtc&&document.getElementById('h-target-utc'))document.getElementById('h-target-utc').value=data.hostTargetUtc;
+    if(data.hostRally&&document.getElementById('h-rally'))document.getElementById('h-rally').value=data.hostRally;
+    if(Array.isArray(data.hostRows))hostRows=data.hostRows;
+    if(Array.isArray(data.enemies))enemies=data.enemies;
+    if(Array.isArray(data.memberRows))memberRows=data.memberRows;
+  }catch(e){
+    localStorage.removeItem(STORAGE_KEY);
+  }finally{
+    isRestoring=false;
+  }
+}
+function clearSavedState(){
+  if(!confirm('저장된 입력값까지 모두 초기화할까요?'))return;
+  localStorage.removeItem(STORAGE_KEY);
+  location.reload();
+}
+
 // 펫 타이머
 var petTimers={};
 function togglePetRow(key){
@@ -252,7 +290,7 @@ function renderHost(){
     var result=targetSec!==null?fmtMS(targetSec-rally*60-row.march):'—';
     return '<tr>'
       +'<td class="num-cell">'+(i+1)+'</td>'
-      +'<td><input class="name-input" value="'+row.name+'" placeholder="닉네임" oninput="hostRows['+i+'].name=this.value"></td>'
+      +'<td><input class="name-input" value="'+row.name+'" placeholder="닉네임" oninput="hostRows['+i+'].name=this.value;saveState()"></td>'
       +'<td><input class="march-input" type="number" value="'+row.march+'" min="0" inputmode="numeric" onchange="hostRows['+i+'].march=parseInt(this.value)||0;renderHost()"></td>'
       +'<td><span class="result-cell">'+result+'</span></td>'
       +'<td><input type="checkbox" id="pet-check-host'+i+'" '+(row.petOn?'checked':'')+' onchange="hostRows['+i+'].petOn=this.checked;renderHost()" style="cursor:pointer;width:14px;height:14px;"></td>'
@@ -260,7 +298,7 @@ function renderHost(){
       +'</tr>'
       +(row.petOn
         ?'<tr><td></td><td colspan="5"><div class="pet-inline" id="pet-area-host'+i+'">'
-          +'<span style="font-size:11px;color:#a78bfa;">시작(UTC)</span>'
+      +'<span style="font-size:11px;color:#a78bfa;">시작(UTC)</span>'
           +'<input type="text" id="pet-start-host'+i+'" value="'+row.petStart+'" placeholder="03:00:00" inputmode="numeric" oninput="autoColon(this);hostRows['+i+'].petStart=this.value;updatePetRow(\'host'+i+'\')" style="width:90px;padding:4px 6px;font-size:12px;letter-spacing:1px;background:#1a1030;border:1px solid #3b2060;border-radius:6px;color:#f8fafc;font-family:var(--mono);">'
           +'<span style="font-size:11px;color:#a78bfa;">남은</span>'
           +'<span class="pet-time" id="pet-time-host'+i+'">--:--</span>'
@@ -268,6 +306,7 @@ function renderHost(){
         :'');
   }).join('');
   hostRows.forEach(function(row,i){if(row.petOn&&row.petStart&&row.petStart.length>=8)updatePetRow('host'+i);});
+  saveState();
 }
 function addHostRow(){hostRows.push({name:'',march:30,petOn:false,petStart:''});renderHost();}
 function removeHostRow(i){clearInterval(petTimers['host'+i]);hostRows.splice(i,1);renderHost();}
@@ -294,7 +333,7 @@ function renderEnemies(){
     var rSec=e.remainSec!==undefined?e.remainSec:30;
     return '<div class="enemy-card">'
       +'<div class="enemy-header">'
-      +'<span class="enemy-badge badge-'+i+'"><input class="enemy-name-input" value="'+e.name+'" oninput="enemies['+i+'].name=this.value;renderMemberTable();renderSwTable()"></span>'
+      +'<span class="enemy-badge badge-'+i+'"><input class="enemy-name-input" value="'+e.name+'" oninput="enemies['+i+'].name=this.value;renderMemberTable();renderSwTable();saveState()"></span>'
       +(e.isSwitching?'<span class="sw-tag">스위칭</span>':'')
       +'<button class="del-btn" onclick="removeEnemy('+i+')" style="margin-left:auto;">×</button>'
       +'</div>'
@@ -333,6 +372,7 @@ function renderEnemies(){
   }).join('');
   enemies.forEach(function(e,i){if(e.petOn&&e.petStart&&e.petStart.length>=8)updatePetRow('enemy'+i);});
   updateEnemyCountdowns();
+  saveState();
 }
 
 function updateEnemyCountdowns(){
@@ -381,12 +421,13 @@ function renderMemberTable(){
     var dep='—',colClass='';
     if(e&&e.arrivalSec!==undefined){dep=fmtMS(e.arrivalSec-row.march);colClass='col-'+row.target;}
     return '<tr><td class="num-cell">'+(i+1)+'</td>'
-      +'<td><input class="name-input" value="'+row.name+'" placeholder="닉네임" oninput="memberRows['+i+'].name=this.value;renderSwTable()"></td>'
+      +'<td><input class="name-input" value="'+row.name+'" placeholder="닉네임" oninput="memberRows['+i+'].name=this.value;renderSwTable();saveState()"></td>'
       +'<td><input class="march-input" type="number" value="'+row.march+'" min="0" inputmode="numeric" onchange="memberRows['+i+'].march=parseInt(this.value)||0;renderMemberTable();renderSwTable()"></td>'
       +'<td><select class="target-select" onchange="memberRows['+i+'].target=parseInt(this.value);renderMemberTable();renderSwTable()">'+opts+'</select></td>'
       +'<td><span class="result-utc '+colClass+'">'+dep+'</span></td>'
       +'<td><button class="del-btn" onclick="removeMemberRow('+i+')">×</button></td></tr>';
   }).join('');
+  saveState();
 }
 
 // 일괄입력
@@ -493,11 +534,12 @@ function renderSwTable(){
       +'<td class="num-cell">'+(idx+1)+'</td>'
       +'<td style="text-align:left;padding-left:6px;"><span style="font-size:12px;color:#bfdbfe;">'+(row.name||'—')+'</span></td>'
       +'<td><span style="font-family:var(--mono);font-size:12px;color:var(--muted);">'+row.march+'</span></td>'
-      +'<td><input class="march-input" type="number" value="'+delay+'" min="0" max="30" inputmode="numeric" onchange="memberRows['+realIdx+'].swDelay=parseInt(this.value)||0;renderSwTable()" style="width:100%;"></td>'
+      +'<td><input class="march-input" type="number" value="'+delay+'" min="0" max="30" inputmode="numeric" onchange="memberRows['+realIdx+'].swDelay=parseInt(this.value)||0;renderSwTable();saveState()" style="width:100%;"></td>'
       +cols+'</tr>';
   }).join('');
 
   wrap.innerHTML='<table>'+colgroup+'<thead><tr>'+headerCols+'</tr></thead><tbody>'+rows+'</tbody></table>';
+  saveState();
 }
 
 function copySwitching(targetIdx){
@@ -524,6 +566,7 @@ function copySwitching(targetIdx){
 }
 
 // 초기 렌더
+restoreState();
 renderHost();
 renderEnemies();
 renderMemberTable();
