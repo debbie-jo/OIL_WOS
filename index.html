@@ -67,7 +67,7 @@ tr:hover td{background:#151f30;}
 .member-mode{display:none;}
 .member-mode.active{display:block;}
 .enemy-list-compact{display:grid;gap:10px;overflow-x:auto;align-items:start;width:min(100%,1220px);margin:0 auto;}
-.enemy-row{display:grid;grid-template-columns:152px 250px 82px 120px 128px minmax(132px,1fr) 36px;gap:10px;align-items:center;width:100%;background:#141c2d;border:1px solid var(--border);border-radius:10px;padding:11px 12px;}
+.enemy-row{display:grid;grid-template-columns:152px 250px 82px 120px 128px minmax(132px,1fr) 94px;gap:10px;align-items:center;width:100%;background:#141c2d;border:1px solid var(--border);border-radius:10px;padding:11px 12px;}
 .enemy-row-head{background:#182235;color:#cbd5e1;font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;padding:8px 12px;}
 .enemy-row-head span{text-align:center;}
 .enemy-row-head span:first-child{text-align:left;}
@@ -77,6 +77,9 @@ tr:hover td{background:#151f30;}
 .time-unit{color:#bfdbfe;font-size:13px;font-weight:800;line-height:1;}
 .enemy-march-cell{display:flex;justify-content:center;}
 .enemy-options{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
+.enemy-actions{display:flex;align-items:center;justify-content:flex-end;gap:5px;}
+.move-btn{background:#111827;border:1px solid var(--border);border-radius:7px;color:#93c5fd;cursor:pointer;padding:4px 7px;font-family:var(--mono);font-size:13px;font-weight:700;}
+.move-btn:disabled{opacity:.28;cursor:not-allowed;}
 .mini-input{width:56px;padding:7px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:#f8fafc;font-family:var(--mono);font-size:14px;font-weight:700;text-align:center;outline:none;}
 .enemy-option{display:flex;align-items:center;justify-content:center;gap:6px;font-size:12px;color:var(--muted);white-space:nowrap;}
 .enemy-option input{width:15px;height:15px;cursor:pointer;}
@@ -460,7 +463,7 @@ function renderEnemies(){
   var list=document.getElementById('enemy-list');
   if(!list)return;
   list.innerHTML='<div class="enemy-list-compact">'
-    +'<div class="enemy-row enemy-row-head"><span>집결장</span><span>남은 집결</span><span>행군</span><span>도착까지</span><span>도착 UTC</span><span>옵션</span><span></span></div>'
+    +'<div class="enemy-row enemy-row-head"><span>집결장</span><span>남은 집결</span><span>행군</span><span>도착까지</span><span>도착 UTC</span><span>옵션</span><span>순서</span></div>'
     +enemies.map(function(e,i){
     var arrival=e.arrivalSec!==undefined?fmtTime(e.arrivalSec):'—';
     var countdown=e.arrivalAtMs?fmtCountdownMs(e.arrivalAtMs-Date.now()):'—';
@@ -473,7 +476,7 @@ function renderEnemies(){
       +'<div class="inline-time countdown" id="enemy-countdown-'+i+'">'+countdown+'</div>'
       +'<div class="inline-time arrival">'+arrival+'</div>'
       +'<div class="enemy-options"><label class="enemy-option"><input type="checkbox" id="pet-check-enemy'+i+'" '+(e.petOn?'checked':'')+' onchange="enemies['+i+'].petOn=this.checked;calcMember()">펫</label><label class="enemy-option"><input type="checkbox" id="sw-check-'+i+'" '+(e.isSwitching?'checked':'')+' onchange="enemies['+i+'].isSwitching=this.checked;renderEnemies();renderSwTable();renderBattleView()">스위칭</label></div>'
-      +'<button class="del-btn" onclick="removeEnemy('+i+')">×</button>'
+      +'<div class="enemy-actions"><button class="move-btn" onclick="moveEnemy('+i+',-1)" '+(i===0?'disabled':'')+'>↑</button><button class="move-btn" onclick="moveEnemy('+i+',1)" '+(i===enemies.length-1?'disabled':'')+'>↓</button><button class="del-btn" onclick="removeEnemy('+i+')">×</button></div>'
       +(e.petOn?'<div style="grid-column:1/-1;"><div class="pet-inline" style="margin-top:2px;"><span style="font-size:11px;color:#a78bfa;">펫 시작(UTC)</span><input type="text" id="pet-start-enemy'+i+'" value="'+(e.petStart||'')+'" placeholder="03:00:00" inputmode="numeric" oninput="autoColon(this);enemies['+i+'].petStart=this.value;updatePetRow(\'enemy'+i+'\');saveState()" style="width:90px;padding:4px 6px;font-size:12px;letter-spacing:1px;background:#1a1030;border:1px solid #3b2060;border-radius:6px;color:#f8fafc;font-family:var(--mono);"><button class="pet-apply-btn" onclick="applyPetStart(\'enemy'+i+'\',this)">현재 적용</button><span style="font-size:11px;color:#a78bfa;">남은</span><span class="pet-time" id="pet-time-enemy'+i+'">--:--</span></div></div>':'')
       +'</div>';
   }).join('')+'</div>';
@@ -610,6 +613,18 @@ function clearMembers(){
 function calcMember(){renderEnemies();renderMemberTable();renderSwTable();}
 function addEnemy(){if(enemies.length>=15)return;enemies.push(makeEnemy(enemies.length,30));calcMember();}
 function removeEnemy(i){enemies.splice(i,1);calcMember();}
+function moveEnemy(i,dir){
+  var next=i+dir;
+  if(next<0||next>=enemies.length)return;
+  var tmp=enemies[i];
+  enemies[i]=enemies[next];
+  enemies[next]=tmp;
+  memberRows.forEach(function(row){
+    if(row.target===i)row.target=next;
+    else if(row.target===next)row.target=i;
+  });
+  calcMember();
+}
 function addMemberRow(){memberRows.push({name:'',march:30,target:0,swDelay:10});renderMemberTable();}
 function removeMemberRow(i){memberRows.splice(i,1);renderMemberTable();renderSwTable();}
 
