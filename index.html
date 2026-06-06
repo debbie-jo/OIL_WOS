@@ -209,6 +209,7 @@ tr:hover td{background:#151f30;}
       <div class="enemy-tools">
         <div class="section-sub">상대 집결장 정보</div>
         <div class="enemy-list-actions">
+          <button class="action-btn" onclick="sortEnemiesByArrival()">도착순 정렬</button>
           <button class="action-btn" onclick="clearSavedState()">저장값 초기화</button>
         </div>
       </div>
@@ -623,6 +624,25 @@ function moveEnemy(i,dir){
     if(row.target===i)row.target=next;
     else if(row.target===next)row.target=i;
   });
+  calcMember();
+}
+function applyEnemyOrder(oldIndexes){
+  var newTargetByOld={};
+  oldIndexes.forEach(function(oldIdx,newIdx){newTargetByOld[oldIdx]=newIdx;});
+  memberRows.forEach(function(row){
+    if(newTargetByOld[row.target]!==undefined)row.target=newTargetByOld[row.target];
+  });
+}
+function sortEnemiesByArrival(){
+  var ordered=enemies.map(function(e,i){return{e:e,old:i};}).sort(function(a,b){
+    var aSet=a.e.arrivalSec!==undefined;
+    var bSet=b.e.arrivalSec!==undefined;
+    if(aSet!==bSet)return aSet?-1:1;
+    if(!aSet)return a.old-b.old;
+    return a.e.arrivalSec-b.e.arrivalSec;
+  });
+  enemies=ordered.map(function(x){return x.e;});
+  applyEnemyOrder(ordered.map(function(x){return x.old;}));
   calcMember();
 }
 function addMemberRow(){memberRows.push({name:'',march:30,target:0,swDelay:10});renderMemberTable();}
