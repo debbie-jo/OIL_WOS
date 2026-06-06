@@ -32,8 +32,8 @@ textarea{width:100%;padding:10px;background:var(--bg3);border:1px solid var(--bo
 textarea:focus{border-color:var(--accent);}
 .table-wrap{overflow-x:auto;}
 table{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed;}
-th{background:var(--bg3);color:#cbd5e1;font-size:10px;font-weight:700;padding:6px 4px;text-align:center;border-bottom:1px solid var(--border);}
-td{padding:6px 4px;border-bottom:1px solid #1a2235;text-align:center;vertical-align:middle;}
+th{background:var(--bg3);color:#cbd5e1;font-size:11px;font-weight:700;padding:8px 5px;text-align:center;border-bottom:1px solid var(--border);}
+td{padding:8px 5px;border-bottom:1px solid #1a2235;text-align:center;vertical-align:middle;}
 tr:last-child td{border-bottom:none;}
 tr:hover td{background:#151f30;}
 .num-cell{color:#94a3b8;font-size:11px;width:24px;padding:0 2px;}
@@ -41,7 +41,7 @@ tr:hover td{background:#151f30;}
 .name-input::placeholder{color:#3a5070;}
 .march-input{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:6px 4px;font-family:var(--mono);font-size:13px;color:#f8fafc;width:100%;text-align:center;outline:none;}
 .result-cell{font-family:var(--mono);font-size:14px;font-weight:bold;color:#fde68a;background:#1a1500;border-radius:6px;padding:5px 8px;min-width:70px;white-space:nowrap;}
-.result-utc{font-family:var(--mono);font-size:13px;font-weight:bold;padding:4px 6px;border-radius:6px;white-space:nowrap;display:inline-block;min-width:70px;}
+.result-utc{font-family:var(--mono);font-size:14px;font-weight:bold;padding:5px 8px;border-radius:6px;white-space:nowrap;display:inline-block;min-width:76px;}
 .del-btn{background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--muted);cursor:pointer;padding:3px 7px;font-size:13px;}
 .del-btn:hover{border-color:var(--danger);color:var(--danger);background:#1f0a0a;}
 .add-btn{width:100%;margin-top:8px;padding:9px;background:transparent;border:1px dashed var(--border);border-radius:8px;color:var(--muted);font-family:var(--sans);font-size:13px;cursor:pointer;}
@@ -54,8 +54,13 @@ tr:hover td{background:#151f30;}
 .enemy-card{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px;}
 .enemy-header{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
 .enemy-badge{font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:1px;}
-.enemy-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.enemy-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
 .enemy-name-input{background:transparent;border:none;outline:none;font-family:inherit;font-size:inherit;font-weight:inherit;color:inherit;width:72px;cursor:text;}
+.enemy-value{font-family:var(--mono);font-size:17px;font-weight:bold;background:#0f1a2e;border:1px solid #1e3a5f;border-radius:8px;padding:9px 12px;text-align:center;letter-spacing:1px;color:#dbeafe;min-height:40px;}
+.enemy-value.countdown{color:#fde68a;background:#1a1500;border-color:#92400e;}
+.enemy-value.arrival{color:#fca5a5;background:#1f0a0a;border-color:#991b1b;letter-spacing:2px;}
+.danger-btn{background:#1f0a0a;border:1px solid #991b1b;border-radius:7px;color:#f87171;font-family:var(--sans);font-size:12px;font-weight:700;padding:5px 12px;cursor:pointer;white-space:nowrap;}
+.danger-btn:hover{border-color:#fca5a5;color:#fca5a5;}
 .target-select{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:4px;font-family:var(--sans);font-size:11px;color:var(--text);cursor:pointer;outline:none;width:100%;}
 .info-box{background:#0f1a2e;border:1px solid #1e3a5f;border-radius:8px;padding:10px 14px;font-size:12px;color:var(--accent2);margin-bottom:14px;line-height:1.6;}
 .pet-inline{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#1a1030;border:1px solid #3b2060;border-radius:8px;padding:8px 10px;margin-top:6px;}
@@ -134,7 +139,7 @@ tr:hover td{background:#151f30;}
 
 <!-- 집결원 방어 -->
 <div class="section" id="member">
-  <div class="info-box">적 집결 알림이 오면 → 남은 집결 시간 입력 후 ⚡ 적용<br>집결 끝나면 → 집결장 행군 시간 입력</div>
+  <div class="info-box">적 집결 알림이 오면 → 남은 집결 시간 입력 후 ⚡ 적용<br>적용 후에는 도착까지 남은 시간이 카운트됩니다</div>
 
   <!-- 상대 집결장 -->
   <div class="card">
@@ -158,7 +163,10 @@ tr:hover td{background:#151f30;}
   <div class="card">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
       <div class="section-sub" style="margin-bottom:0;">내 유저 출발 시간</div>
-      <button class="copy-btn" onclick="copyAllMembers(-1)" id="copy-all-btn">📋 전체 복사</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="danger-btn" onclick="clearMembers()">수비원 전체 삭제</button>
+        <button class="copy-btn" onclick="copyAllMembers(-1)" id="copy-all-btn">📋 전체 복사</button>
+      </div>
     </div>
     <div id="member-copy-btns" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;"></div>
     <div class="table-wrap">
@@ -190,7 +198,7 @@ tr:hover td{background:#151f30;}
 
 <script>
 function updateClock(){var n=new Date();document.getElementById('utc-clock').textContent=[n.getUTCHours(),n.getUTCMinutes(),n.getUTCSeconds()].map(function(v){return String(v).padStart(2,'0');}).join(':');}
-setInterval(updateClock,1000);updateClock();
+setInterval(function(){updateClock();updateEnemyCountdowns();},1000);updateClock();
 
 function switchTab(tab){
   ['host','member','switching'].forEach(function(t){document.getElementById(t).classList.toggle('active',t===tab);});
@@ -200,6 +208,7 @@ function switchTab(tab){
 function fmtTime(s){s=((s%86400)+86400)%86400;return[Math.floor(s/3600),Math.floor((s%3600)/60),s%60].map(function(v){return String(v).padStart(2,'0');}).join(':');}
 function fmtMS(s){s=((s%86400)+86400)%86400;return[Math.floor((s%3600)/60),s%60].map(function(v){return String(v).padStart(2,'0');}).join(':');}
 function fmtDuration(sec){sec=Math.max(0,Math.floor(sec||0));var h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60),s=sec%60;if(h>0)return h+'시간 '+m+'분 '+s+'초';if(m>0)return m+'분 '+s+'초';return s+'초';}
+function fmtCountdownMs(ms){if(ms===undefined||ms===null)return '—';var sec=Math.max(0,Math.ceil(ms/1000));return fmtDuration(sec);}
 function parseSecs(str){str=str.replace(/[^0-9]/g,'');if(!str)return 0;if(str.length<=2)return parseInt(str)*3600;if(str.length<=4)return parseInt(str.slice(0,2))*3600+parseInt(str.slice(2))*60;return parseInt(str.slice(0,2))*3600+parseInt(str.slice(2,4))*60+parseInt(str.slice(4,6)||0);}
 function autoColon(input){var v=input.value.replace(/[^0-9]/g,'').slice(0,6);if(v.length>=5)v=v.slice(0,2)+':'+v.slice(2,4)+':'+v.slice(4);else if(v.length>=3)v=v.slice(0,2)+':'+v.slice(2);input.value=v;}
 function nowUTC(){var n=new Date();return n.getUTCHours()*3600+n.getUTCMinutes()*60+n.getUTCSeconds();}
@@ -280,6 +289,7 @@ var enemies=[
 function renderEnemies(){
   document.getElementById('enemy-list').innerHTML=enemies.map(function(e,i){
     var arrival=e.arrivalSec!==undefined?fmtTime(e.arrivalSec):'—';
+    var countdown=e.arrivalAtMs?fmtCountdownMs(e.arrivalAtMs-Date.now()):'—';
     var rMin=e.remainMin!==undefined?e.remainMin:4;
     var rSec=e.remainSec!==undefined?e.remainSec:30;
     return '<div class="enemy-card">'
@@ -298,7 +308,8 @@ function renderEnemies(){
       +'</div>'
       +'<div class="enemy-grid">'
       +'<div><label>집결장 행군 시간 (초)</label><input type="number" value="'+e.march+'" min="0" inputmode="numeric" style="font-family:var(--mono);font-size:15px;width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:#f8fafc;outline:none;" onchange="enemies['+i+'].march=parseInt(this.value)||0;calcMember()"></div>'
-      +'<div><label>적 도착 시간 (UTC)</label><div style="font-family:var(--mono);font-size:18px;font-weight:bold;color:#fca5a5;background:#1f0a0a;border:1px solid #991b1b;border-radius:8px;padding:9px 12px;text-align:center;letter-spacing:2px;">'+arrival+'</div></div>'
+      +'<div><label>도착까지 남은 시간</label><div class="enemy-value countdown" id="enemy-countdown-'+i+'">'+countdown+'</div></div>'
+      +'<div><label>적 도착 시간 (UTC)</label><div class="enemy-value arrival">'+arrival+'</div></div>'
       +'</div>'
       +'<div style="display:flex;gap:16px;margin-top:10px;flex-wrap:wrap;">'
       +'<div style="display:flex;align-items:center;gap:8px;">'
@@ -321,6 +332,15 @@ function renderEnemies(){
       +'</div>';
   }).join('');
   enemies.forEach(function(e,i){if(e.petOn&&e.petStart&&e.petStart.length>=8)updatePetRow('enemy'+i);});
+  updateEnemyCountdowns();
+}
+
+function updateEnemyCountdowns(){
+  enemies.forEach(function(e,i){
+    var el=document.getElementById('enemy-countdown-'+i);
+    if(!el)return;
+    el.textContent=e.arrivalAtMs?fmtCountdownMs(e.arrivalAtMs-Date.now()):'—';
+  });
 }
 
 function setOpenByRemain(i){
@@ -338,6 +358,7 @@ function applyEnemyRemain(i,totalSec){
   var sec=totalSec%60;
   var arrSec=((nowUTC()+totalSec+enemies[i].march)%86400+86400)%86400;
   enemies[i].arrivalSec=arrSec;
+  enemies[i].arrivalAtMs=Date.now()+(totalSec+enemies[i].march)*1000;
   enemies[i].remainMin=min;
   enemies[i].remainSec=sec;
   calcMember();
@@ -394,7 +415,7 @@ function applyBulkInput(){
   alert(newRows.length+'명 입력 완료!');
 }
 function clearMembers(){
-  if(!confirm('전체 초기화할까요?'))return;
+  if(!confirm('방어 수비원 목록을 전체 삭제할까요?'))return;
   memberRows=[];
   renderMemberTable();
   renderSwTable();
