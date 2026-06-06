@@ -67,7 +67,7 @@ tr:hover td{background:#151f30;}
 .member-mode{display:none;}
 .member-mode.active{display:block;}
 .enemy-list-compact{display:grid;gap:10px;overflow-x:auto;align-items:start;width:min(100%,1220px);margin:0 auto;}
-.enemy-row{display:grid;grid-template-columns:152px 250px 82px 120px 128px minmax(132px,1fr) 94px;gap:10px;align-items:center;width:100%;background:#141c2d;border:1px solid var(--border);border-radius:10px;padding:11px 12px;}
+.enemy-row{display:grid;grid-template-columns:152px 250px 82px 112px 112px 128px minmax(132px,1fr) 94px;gap:10px;align-items:center;width:100%;background:#141c2d;border:1px solid var(--border);border-radius:10px;padding:11px 12px;}
 .enemy-row-head{background:#182235;color:#cbd5e1;font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;padding:8px 12px;}
 .enemy-row-head span{text-align:center;}
 .enemy-row-head span:first-child{text-align:left;}
@@ -90,12 +90,12 @@ tr:hover td{background:#151f30;}
 .battle-panel{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px;}
 .battle-enemy-list,.battle-member-groups{display:grid;gap:8px;}
 .battle-head{display:grid;gap:8px;align-items:center;background:#182235;color:#cbd5e1;border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:10px;font-weight:700;letter-spacing:.6px;}
-.battle-head.enemy{grid-template-columns:minmax(0,1fr) 96px 64px;}
+.battle-head.enemy{grid-template-columns:minmax(0,1fr) 94px 94px 64px;}
 .battle-head.member{grid-template-columns:minmax(0,1fr) 88px 94px;}
 .battle-head span{text-align:center;}
 .battle-head span:first-child{text-align:left;}
 .battle-group .battle-head{border-left:0;border-right:0;border-radius:0;background:#101827;}
-.battle-enemy{display:grid;grid-template-columns:minmax(0,1fr) 96px 64px;gap:8px;align-items:center;background:#141c2d;border:1px solid var(--border);border-radius:8px;padding:8px 10px;}
+.battle-enemy{display:grid;grid-template-columns:minmax(0,1fr) 94px 94px 64px;gap:8px;align-items:center;background:#141c2d;border:1px solid var(--border);border-radius:8px;padding:8px 10px;}
 .battle-enemy strong{font-size:13px;color:#dbeafe;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .battle-group{border:1px solid var(--border);border-radius:9px;overflow:hidden;background:#111827;}
 .battle-group-head{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px;background:#182235;padding:8px 10px;}
@@ -470,7 +470,7 @@ function defaultEnemyRemain(index){
 }
 function makeEnemy(index,march){
   var remain=defaultEnemyRemain(index);
-  return {id:nextEnemyId(),name:'집결장'+(index+1),march:march||30,arrivalSec:undefined,remainMin:remain.min,remainSec:remain.sec,petOn:false,petStart:'',isSwitching:false};
+  return {id:nextEnemyId(),name:'집결장'+(index+1),march:march||30,arrivalSec:undefined,rallyEndAtMs:undefined,remainMin:remain.min,remainSec:remain.sec,petOn:false,petStart:'',isSwitching:false};
 }
 var enemies=[makeEnemy(0,30),makeEnemy(1,32)];
 
@@ -501,9 +501,10 @@ function renderEnemies(){
   var list=document.getElementById('enemy-list');
   if(!list)return;
   list.innerHTML='<div class="enemy-list-compact">'
-    +'<div class="enemy-row enemy-row-head"><span>집결장</span><span>남은 집결</span><span>행군</span><span>도착까지</span><span>도착 UTC</span><span>옵션</span><span>순서</span></div>'
+    +'<div class="enemy-row enemy-row-head"><span>집결장</span><span>남은 집결</span><span>행군</span><span>집결 남음</span><span>도착까지</span><span>도착 UTC</span><span>옵션</span><span>순서</span></div>'
     +enemies.map(function(e,i){
     var arrival=e.arrivalSec!==undefined?fmtTime(e.arrivalSec):'—';
+    var rallyCountdown=e.rallyEndAtMs?fmtCountdownMs(e.rallyEndAtMs-Date.now()):'—';
     var countdown=e.arrivalAtMs?fmtCountdownMs(e.arrivalAtMs-Date.now()):'—';
     var rMin=e.remainMin!==undefined?e.remainMin:4;
     var rSec=e.remainSec!==undefined?e.remainSec:30;
@@ -511,6 +512,7 @@ function renderEnemies(){
       +'<div class="enemy-name-wrap"><span class="enemy-badge '+badgeClass(i)+'"><input class="enemy-name-input" value="'+e.name+'" oninput="enemies['+i+'].name=this.value;renderMemberTable();renderSwTable();renderBattleView();saveState()"></span></div>'
       +'<div class="enemy-remain"><input class="mini-input" type="number" id="remain-min-'+i+'" value="'+rMin+'" min="0" max="59" inputmode="numeric"><span class="time-unit">분</span><input class="mini-input" type="number" id="remain-sec-'+i+'" value="'+rSec+'" min="0" max="59" inputmode="numeric"><span class="time-unit">초</span><button class="now-btn" id="now-btn-'+i+'" onclick="setOpenByRemain('+i+')">적용</button></div>'
       +'<div class="enemy-march-cell"><input class="mini-input" type="number" value="'+e.march+'" min="0" inputmode="numeric" onchange="enemies['+i+'].march=parseInt(this.value)||0;calcMember()"></div>'
+      +'<div class="inline-time countdown" id="enemy-rally-countdown-'+i+'">'+rallyCountdown+'</div>'
       +'<div class="inline-time countdown" id="enemy-countdown-'+i+'">'+countdown+'</div>'
       +'<div class="inline-time arrival">'+arrival+'</div>'
       +'<div class="enemy-options"><label class="enemy-option"><input type="checkbox" id="pet-check-enemy'+i+'" '+(e.petOn?'checked':'')+' onchange="enemies['+i+'].petOn=this.checked;calcMember()">펫</label><label class="enemy-option"><input type="checkbox" id="sw-check-'+i+'" '+(e.isSwitching?'checked':'')+' onchange="enemies['+i+'].isSwitching=this.checked;renderEnemies();renderSwTable();renderBattleView()">스위칭</label></div>'
@@ -526,6 +528,8 @@ function renderEnemies(){
 
 function updateEnemyCountdowns(){
   enemies.forEach(function(e,i){
+    var rallyEl=document.getElementById('enemy-rally-countdown-'+i);
+    if(rallyEl)rallyEl.textContent=e.rallyEndAtMs?fmtCountdownMs(e.rallyEndAtMs-Date.now()):'—';
     var el=document.getElementById('enemy-countdown-'+i);
     if(!el)return;
     el.textContent=e.arrivalAtMs?fmtCountdownMs(e.arrivalAtMs-Date.now()):'—';
@@ -535,6 +539,8 @@ function updateEnemyCountdowns(){
 
 function updateBattleCountdowns(){
   enemies.forEach(function(e,i){
+    var rallyEl=document.getElementById('battle-enemy-rally-'+i);
+    if(rallyEl)rallyEl.textContent=e.rallyEndAtMs?fmtCountdownMs(e.rallyEndAtMs-Date.now()):'—';
     var el=document.getElementById('battle-enemy-countdown-'+i);
     if(el)el.textContent=e.arrivalAtMs?fmtCountdownMs(e.arrivalAtMs-Date.now()):'—';
   });
@@ -549,8 +555,8 @@ function renderBattleView(){
   var enemyWrap=document.getElementById('battle-enemies');
   var memberWrap=document.getElementById('battle-members');
   if(enemyWrap){
-    enemyWrap.innerHTML=enemies.length?'<div class="battle-head enemy"><span>닉네임</span><span>도착까지</span><span>복사</span></div>'+enemies.map(function(e,i){
-      return '<div class="battle-enemy"><strong><span class="enemy-badge '+badgeClass(i)+'">'+(i+1)+'</span> '+e.name+'</strong><span class="inline-time countdown" id="battle-enemy-countdown-'+i+'">'+(e.arrivalAtMs?fmtCountdownMs(e.arrivalAtMs-Date.now()):'—')+'</span><button class="copy-btn battle-copy-btn '+colorClass(i)+'" onclick="copyAllMembers('+i+',this)">복사</button></div>';
+    enemyWrap.innerHTML=enemies.length?'<div class="battle-head enemy"><span>닉네임</span><span>집결 남음</span><span>도착까지</span><span>복사</span></div>'+enemies.map(function(e,i){
+      return '<div class="battle-enemy"><strong><span class="enemy-badge '+badgeClass(i)+'">'+(i+1)+'</span> '+e.name+'</strong><span class="inline-time countdown" id="battle-enemy-rally-'+i+'">'+(e.rallyEndAtMs?fmtCountdownMs(e.rallyEndAtMs-Date.now()):'—')+'</span><span class="inline-time countdown" id="battle-enemy-countdown-'+i+'">'+(e.arrivalAtMs?fmtCountdownMs(e.arrivalAtMs-Date.now()):'—')+'</span><button class="copy-btn battle-copy-btn '+colorClass(i)+'" onclick="copyAllMembers('+i+',this)">복사</button></div>';
     }).join(''):'<div style="color:var(--muted);font-size:13px;text-align:center;padding:18px;">상대 집결장이 없습니다</div>';
   }
   if(memberWrap){
@@ -583,6 +589,7 @@ function applyEnemyRemain(i,totalSec){
   var sec=totalSec%60;
   var arrSec=((nowUTC()+totalSec+enemies[i].march)%86400+86400)%86400;
   enemies[i].arrivalSec=arrSec;
+  enemies[i].rallyEndAtMs=Date.now()+totalSec*1000;
   enemies[i].arrivalAtMs=Date.now()+(totalSec+enemies[i].march)*1000;
   enemies[i].remainMin=min;
   enemies[i].remainSec=sec;
@@ -607,12 +614,12 @@ function renderMemberTable(){
   var selectedTarget=document.getElementById('selected-target');
   if(selectedTarget){
     var prev=selectedTarget.value;
-    selectedTarget.innerHTML=enemies.map(function(e,j){return'<option value="'+j+'">'+e.name+'</option>';}).join('');
+    selectedTarget.innerHTML=enemies.map(function(e,j){return'<option value="'+j+'">'+(j+1)+'. '+e.name+'</option>';}).join('');
     if(prev!==''&&enemies[parseInt(prev)])selectedTarget.value=prev;
   }
   document.getElementById('member-tbody').innerHTML=memberRows.map(function(row,i){
     var targetIdx=getMemberTargetIndex(row);
-    var opts=enemies.map(function(e,j){return'<option value="'+j+'" '+(targetIdx===j?'selected':'')+'>'+e.name+'</option>';}).join('');
+    var opts=enemies.map(function(e,j){return'<option value="'+j+'" '+(targetIdx===j?'selected':'')+'>'+(j+1)+'. '+e.name+'</option>';}).join('');
     var e=enemies[targetIdx];
     var dep='—',colClass='';
     if(e&&e.arrivalSec!==undefined){dep=fmtMS(e.arrivalSec-row.march);colClass=colorClass(targetIdx);}
@@ -700,6 +707,7 @@ function resetEnemyTimes(){
     e.remainMin=remain.min;
     e.remainSec=remain.sec;
     e.arrivalSec=undefined;
+    e.rallyEndAtMs=undefined;
     e.arrivalAtMs=undefined;
   });
   calcMember();
